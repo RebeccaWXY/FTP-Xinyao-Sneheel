@@ -19,8 +19,8 @@ int main(int argc, char** argv)
 	char *pass[100];
 	int fds[100];
 	int auth=0;
-	users[100]="user";
-	pass[100]="pass";
+	users[0]="user";
+	pass[0]="pass";
 
 	// Reads in port and ip
 	char* ip_addr = argv[1];
