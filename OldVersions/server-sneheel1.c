@@ -16,6 +16,7 @@ int main(int argc, char** argv)
 	char users[100][100];
 	char pass[100][100];
 	int fds[100];
+	int auth=0;
 	users[0]="user";
 	pass[0]="pass";
 
@@ -89,7 +90,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					if(serve_client(fd)==-1)
+					if(serve_client(fd,auth)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
@@ -115,7 +116,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int serve_client(int client_fd, int & auth, )
+int serve_client(int client_fd, int & auth, char** users, char** pass, int* fds)
 {
 	char message[100];
 	char msgx[100];	
@@ -142,7 +143,7 @@ int serve_client(int client_fd, int & auth, )
 		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"user")==0)
 		{
-			int check = finderu(para);
+			int check = finderu(para,pass);
 			if(check>=0)
 			{
 				msgx = "Username OK, password required ";
@@ -187,4 +188,26 @@ int serve_client(int client_fd, int & auth, )
 	{
 		//user has authenticated
 	}
+}
+
+//finds username if it exists
+int finderu(char* u,char** users)
+{
+	for(int i =0; i<100; i++)
+	{
+		if(strcmp(users[i],u))
+			return i;
+	}
+	return -1;
+}
+
+//finds password if it exists
+int finderp(char* p,char** pass)
+{
+	for(int i =0; i<100; i++)
+	{
+		if(strcmp(pass[i],p))
+			return i;
+	}
+	return -1;
 }
