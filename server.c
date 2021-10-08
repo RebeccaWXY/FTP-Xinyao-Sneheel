@@ -119,7 +119,6 @@ int main(int argc, char** argv)
 int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 {
 	char message[100];
-	printf("%d",*auth);
 	char msgx[100];	
 	bzero(&msgx,sizeof(msgx));
 	bzero(&message,sizeof(message));
@@ -140,11 +139,10 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		char para[100];
 		bzero(&comm,sizeof(comm));
 		bzero(&para,sizeof(para));
-		printf("User");
 		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"user")==0)
 		{
-			int check = finderu(para,pass);
+			int check = finderu(para,users);
 			if(check>=0)
 			{
 				strcpy(msgx,"Username OK, password required ");
