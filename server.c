@@ -116,9 +116,10 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
+int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 {
 	char message[100];
+	printf("%d",*auth);
 	char msgx[100];	
 	bzero(&msgx,sizeof(msgx));
 	bzero(&message,sizeof(message));
@@ -126,7 +127,6 @@ int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
 		{
 			perror("recv");
 			return 0;
-			//break;
 		}
 	if(strcmp(message,"bye")==0)
 		{
@@ -134,12 +134,13 @@ int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
 			close(client_fd);
 			return -1;
 		}
-	if(auth==0)
+	if(*auth==0)
 	{	
 		char comm[100];
 		char para[100];
 		bzero(&comm,sizeof(comm));
 		bzero(&para,sizeof(para));
+		printf("User");
 		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"user")==0)
 		{
@@ -148,7 +149,7 @@ int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
 			{
 				strcpy(msgx,"Username OK, password required ");
 				send(client_fd,msgx,sizeof(msgx),0);
-				auth=1;
+				*auth=1;
 				fds[check]=client_fd;	
 			}
 			else
@@ -169,7 +170,7 @@ int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
 		}
 		return 0;
 	}
-	else if(auth==1)
+	else if(*auth==1)
 	{
 		char comm[100];
 		char para[100];
@@ -180,7 +181,7 @@ int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
 			if(fds[finderp(para)]==client_fd)
 			{	
 				strcpy(msgx,"Authentication Complete");
-				auth=2;
+				*auth=2;
 				send(client_fd,msgx,sizeof(msgx),0);
 			}
 			else
@@ -207,7 +208,7 @@ int finderu(char* u,char** users)
 {
 	for(int i =0; i<100; i++)
 	{
-		if(strcmp(users[i],u))
+		if(strcmp(users[i],u)==0)
 			return i;
 	}
 	return -1;
@@ -218,7 +219,7 @@ int finderp(char* p,char** pass)
 {
 	for(int i =0; i<100; i++)
 	{
-		if(strcmp(pass[i],p))
+		if(strcmp(pass[i],p)==0)
 			return i;
 	}
 	return -1;
