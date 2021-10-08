@@ -3,7 +3,7 @@
 #include<sys/socket.h>
 #include<sys/select.h>
 #include<arpa/inet.h>
-#include<sys/time/h>
+#include<sys/time.h>
 #include<sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -17,8 +17,8 @@ int main(int argc, char** argv)
 	char pass[100][100];
 	int fds[100];
 	int auth=0;
-	users[0]="user";
-	pass[0]="pass";
+	strcpy(users[0],"user");
+	strcpy(pass[0],"pass");
 
 	// Reads in port and ip
 	char* ip_addr = argv[1];
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					if(serve_client(fd,auth)==-1)
+					if(serve_client(fd,&auth,users,pass,fds)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int serve_client(int client_fd, int & auth, char** users, char** pass, int* fds)
+int serve_client(int client_fd, int auth, char** users, char** pass, int* fds)
 {
 	char message[100];
 	char msgx[100];	
@@ -146,40 +146,53 @@ int serve_client(int client_fd, int & auth, char** users, char** pass, int* fds)
 			int check = finderu(para,pass);
 			if(check>=0)
 			{
-				msgx = "Username OK, password required ";
+				strcpy(msgx,"Username OK, password required ");
 				send(client_fd,msgx,sizeof(msgx),0);
 				auth=1;
 				fds[check]=client_fd;	
 			}
 			else
 			{
-				msgx = "Username not found";
+				strcpy(msgx,"Username not found");
 				send(client_fd,msgx,sizeof(msgx),0);
 			}
 		}
 		else if(strcmp(comm,"pass")==0)
 		{
-			msgx="Set password first";
+			strcpy(msgx,"Set username first");
 			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		else
 		{
-			msgx = "Authenticate first";
+			strcpy(msgx,"Authenticate first");
 			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		return 0;
 	}
 	else if(auth==1)
 	{
-		if(fds[finderp(parseauth(message))]==client_fd)
-		{	
-			msgx="Authentication Complete";
-			auth=2;
-			send(client_fd,msgx,sizeof(msgx),0);
+		char comm[100];
+		char para[100];
+		bzero(&comm,sizeof(comm));
+		bzero(&para,sizeof(para));
+		if(strcmp(comm,"pass")==0)
+		{
+			sscanf(message,"%s %s", comm , para);
+			if(fds[finderp(para)]==client_fd)
+			{	
+				strcpy(msgx,"Authentication Complete");
+				auth=2;
+				send(client_fd,msgx,sizeof(msgx),0);
+			}
+			else
+			{
+				strcpy(msgx,"Wrong password");
+				send(client_fd,msgx,sizeof(msgx),0);
+			}
 		}
 		else
 		{
-			msgx="Wrong password";
+			strcpy(msgx,"Set password");
 			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		return 0;
