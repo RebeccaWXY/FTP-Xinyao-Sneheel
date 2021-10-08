@@ -206,7 +206,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 //finds username if it exists
 int finderu(char* u,char** users)
 {
-	for(int i =0; i<100; i++)
+	for(int i =0; i<10; i++)
 	{
 		if(strcmp(users[i],u)==0)
 			return i;
@@ -217,7 +217,7 @@ int finderu(char* u,char** users)
 //finds password if it exists
 int finderp(char* p,char** pass)
 {
-	for(int i =0; i<100; i++)
+	for(int i =0; i<10; i++)
 	{
 		if(strcmp(pass[i],p)==0)
 			return i;
