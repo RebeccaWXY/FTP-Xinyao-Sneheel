@@ -20,11 +20,19 @@ int main(int argc, char** argv)
 	int fds[100];
 	int auth=0;
 	users[0]="user";
-	pass[0]="pass";
+	pass[0]="user";
+	int see=1;
+	char* ip_addr;
+	int port;
+	if(argc==3)
+		see=0;
 
 	// Reads in port and ip
-	char* ip_addr = argv[1];
-	int port = atoi(argv[2]);
+	if(see==0)
+	{
+		ip_addr = argv[1];
+		port = atoi(argv[2]);
+	}
 
 
 	//1. socket();
@@ -46,8 +54,16 @@ int main(int argc, char** argv)
 	struct sockaddr_in server_address;
 	bzero(&server_address,sizeof(server_address));
 	server_address.sin_family = AF_INET;
-	server_address.sin_port = htons(port);
-	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(see==0)
+	{	
+		server_address.sin_port = htons(port);
+		server_address.sin_addr.s_addr = inet_addr(ip_addr);
+	}
+	else
+	{
+		server_address.sin_port = htons(5000);
+		server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+	}
 	if(bind(server_fd,(struct sockaddr*)&server_address,sizeof(server_address))<0)
 	{
 		perror("bind");
@@ -71,7 +87,7 @@ int main(int argc, char** argv)
 	//4. accept()
 	while(1)
 	{	
-		printf("max_fd=%d\n",max_fd);
+		// printf("max_fd=%d\n",max_fd);
 		ready_fdset = full_fdset;
 		if(select(max_fd+1,&ready_fdset,NULL,NULL,NULL)<0)
 		{
@@ -148,9 +164,10 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 			if(check>=0)
 			{
 				strcpy(msgx,"Username OK, password required ");
+				//printf("%s",msgx);
 				send(client_fd,msgx,sizeof(msgx),0);
 				*auth=1;
-				fds[check]=client_fd;	
+				fds[check]=client_fd;
 			}
 			else
 			{
@@ -176,9 +193,11 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		char para[100];
 		bzero(&comm,sizeof(comm));
 		bzero(&para,sizeof(para));
+		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"pass")==0)
 		{
-			if(fds[finderp(para,pass)]==client_fd)
+			int check=finderp(para,pass);
+			if(check>=0 && fds[check]==client_fd)
 			{	
 				strcpy(msgx,"Authentication Complete");
 				*auth=2;
@@ -206,7 +225,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 //finds username if it exists
 int finderu(char* u,char** users)
 {
-	for(int i =0; i<10; i++)
+	for(int i =0; i<1; i++)
 	{
 		if(strcmp(users[i],u)==0)
 			return i;
@@ -217,7 +236,7 @@ int finderu(char* u,char** users)
 //finds password if it exists
 int finderp(char* p,char** pass)
 {
-	for(int i =0; i<10; i++)
+	for(int i =0; i<1; i++)
 	{
 		if(strcmp(pass[i],p)==0)
 			return i;
