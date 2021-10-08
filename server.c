@@ -3,7 +3,7 @@
 #include<sys/socket.h>
 #include<sys/select.h>
 #include<arpa/inet.h>
-#include<sys/time/h>
+#include<sys/time.h>
 #include<sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -17,8 +17,8 @@ int main(int argc, char** argv)
 	char pass[100][100];
 	int fds[100];
 	int auth=0;
-	users[0]="user";
-	pass[0]="pass";
+	strcpy(users[0],"user");
+	strcpy(pass[0],"pass");
 
 	// Reads in port and ip
 	char* ip_addr = argv[1];
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					if(serve_client(fd,auth)==-1)
+					if(serve_client(fd,auth,users,pass,fds)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
