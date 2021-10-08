@@ -13,14 +13,14 @@ int main(int argc, char** argv)
 
 {
 	//initialise list of users and their passwords (temporary)
-	string users[100];
-	string pass[100];
+	char users[100][100];
+	char pass[100][100];
 	int fds[100];
 	users[0]="user";
 	pass[0]="pass";
 
 	// Reads in port and ip
-	string ip_addr = argv[1];
+	char* ip_addr = argv[1];
 	int port = atoi(argv[2]);
 
 
@@ -119,7 +119,7 @@ int serve_client(int client_fd, int & auth, )
 {
 	char message[100];
 	char msgx[100];	
-	bzero(&message,sizeof(msgx));
+	bzero(&msgx,sizeof(msgx));
 	bzero(&message,sizeof(message));
 	if(recv(client_fd,message,sizeof(message),0)<0)
 		{
@@ -135,22 +135,36 @@ int serve_client(int client_fd, int & auth, )
 		}
 	if(auth==0)
 	{	
-		char* auth[2];
-		strcpy(auth[0],parseauth(message)[0]);
-		strcpy(auth[1],parseauth(message)[1])
-		int check = finderu(parseauth(message)[1]);
-		string msgx="";
-		
-		if(check>=0)
+		char comm[100];
+		char para[100];
+		bzero(&comm,sizeof(comm));
+		bzero(&para,sizeof(para));
+		sscanf(message,"%s %s", comm , para);
+		if(strcmp(comm,"user")==0)
 		{
-			msgx = "Username OK, password required ";
+			int check = finderu(para);
+			if(check>=0)
+			{
+				msgx = "Username OK, password required ";
+				send(client_fd,msgx,sizeof(msgx),0);
+				auth=1;
+				fds[check]=client_fd;	
+			}
+			else
+			{
+				msgx = "Username not found";
+				send(client_fd,msgx,sizeof(msgx),0);
+			}
+		}
+		else if(strcmp(comm,"pass")==0)
+		{
+			msgx="Set password first";
 			send(client_fd,msgx,sizeof(msgx),0);
-			auth=1;
-			fds[check]=client_fd;	
 		}
 		else
 		{
-			msgx = "Username not found";
+			msgx = "Authenticate first";
+			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		return 0;
 	}
@@ -169,20 +183,8 @@ int serve_client(int client_fd, int & auth, )
 		}
 		return 0;
 	}
-	else if(auth==2)
+	else
 	{
 		//user has authenticated
 	}
-	else
-	{
-		msgx = "Authenticate first";
-		send(client_fd,msgx,sizeof(msgx),0);
-		return 0;
-
-	}
-}
-
-char* parseauth(string k)
-{
-	
 }
