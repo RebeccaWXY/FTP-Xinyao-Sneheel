@@ -8,17 +8,19 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-
+int finderu(char* u,char** users);
+int finderp(char* p,char** pass);
+int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds);
 int main(int argc, char** argv)
 
 {
 	//initialise list of users and their passwords (temporary)
-	char users[100][100];
-	char pass[100][100];
+	char *users[100];
+	char *pass[100];
 	int fds[100];
 	int auth=0;
-	strcpy(users[0],"user");
-	strcpy(pass[0],"pass");
+	users[100]="user";
+	pass[100]="pass";
 
 	// Reads in port and ip
 	char* ip_addr = argv[1];
@@ -44,7 +46,7 @@ int main(int argc, char** argv)
 	struct sockaddr_in server_address;
 	bzero(&server_address,sizeof(server_address));
 	server_address.sin_family = AF_INET;
-	server_address.sin_port = htons(5000);
+	server_address.sin_port = htons(port);
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	if(bind(server_fd,(struct sockaddr*)&server_address,sizeof(server_address))<0)
 	{
@@ -119,7 +121,7 @@ int main(int argc, char** argv)
 int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 {
 	char message[100];
-	char msgx[100];	
+	char msgx[100];
 	bzero(&msgx,sizeof(msgx));
 	bzero(&message,sizeof(message));
 	if(recv(client_fd,message,sizeof(message),0)<0)
@@ -176,7 +178,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		bzero(&para,sizeof(para));
 		if(strcmp(comm,"pass")==0)
 		{
-			if(fds[finderp(para)]==client_fd)
+			if(fds[finderp(para,pass)]==client_fd)
 			{	
 				strcpy(msgx,"Authentication Complete");
 				*auth=2;
