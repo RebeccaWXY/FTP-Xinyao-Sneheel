@@ -18,7 +18,8 @@ int main(int argc, char** argv)
 	char *users[100];
 	char *pass[100];
 	int fds[100];
-	int auth=0;
+	int clients_auth[1000];
+	bool is_logged[100];
 	users[0]="user";
 	pass[0]="user";
 	int see=1;
@@ -26,6 +27,12 @@ int main(int argc, char** argv)
 	int port;
 	if(argc==3)
 		see=0;
+
+	for(int i=0;i<1000;i++)
+		clients_auth[i]=0;
+
+	for(int i=0;i<100;i++)
+		is_logged[i]=0;
 
 	// Reads in port and ip
 	if(see==0)
@@ -37,8 +44,6 @@ int main(int argc, char** argv)
 
 	//1. socket();
 	int server_fd = socket(AF_INET,SOCK_STREAM,0);
-	printf("server_fd = %d \n",server_fd);
-
 	if(server_fd<0)
 	{
 		perror("socket");
@@ -102,13 +107,13 @@ int main(int argc, char** argv)
 				if(fd==server_fd)
 				{
 					int new_fd = accept(server_fd,NULL,NULL);
-					printf("client fd = %d \n",new_fd);
+					// printf("client fd = %d \n",new_fd);
 					FD_SET(new_fd,&full_fdset);
 					if(new_fd>max_fd) max_fd=new_fd;
 				}
 				else
 				{
-					if(serve_client(fd,&auth,users,pass,fds)==-1)
+					if(serve_client(fd,clients_auth,users,pass,fds)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
@@ -145,13 +150,15 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 			perror("recv");
 			return 0;
 		}
-	if(strcmp(message,"bye")==0)
+	if(strcmp(message,"quit")==0)
 		{
 			printf("Client disconnected \n");
+			int find = finder_fd(client_fd);
+			is_logged[find]=0;
 			close(client_fd);
 			return -1;
 		}
-	if(*auth==0)
+	if(auth[client_fd]==0)
 	{	
 		char comm[100];
 		char para[100];
@@ -166,7 +173,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 				strcpy(msgx,"Username OK, password required ");
 				//printf("%s",msgx);
 				send(client_fd,msgx,sizeof(msgx),0);
-				*auth=1;
+				auth[client_fd]=1;
 				fds[check]=client_fd;
 			}
 			else
@@ -187,7 +194,9 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		}
 		return 0;
 	}
-	else if(*auth==1)
+
+
+	else if(auth[client_fd]==1)
 	{
 		char comm[100];
 		char para[100];
@@ -199,8 +208,18 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 			int check=finderp(para,pass);
 			if(check>=0 && fds[check]==client_fd)
 			{	
+				if(is_logged[check]==1)
+				{
+					printf("User is already logged in\n");
+					strcpy(msgx,"User logged in already, enter different details");
+					send(client_fd,msgx,sizeof(msgx),0);
+					auth[client_fd]=0;
+					return 0;
+				}
 				strcpy(msgx,"Authentication Complete");
-				*auth=2;
+				auth[client_fd]=2;
+				is_logged[check]=1;
+				printf("User Authenticated \n");
 				send(client_fd,msgx,sizeof(msgx),0);
 			}
 			else
@@ -219,6 +238,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 	else
 	{
 		//user has authenticated
+		return 0;
 	}
 }
 
