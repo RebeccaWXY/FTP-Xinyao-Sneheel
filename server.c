@@ -8,20 +8,30 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-int finderu(char* u,char** users);
-int finderp(char* p,char** pass);
-int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds);
+int finderu(char* u,struct Client* clients);
+int finderp(char* p,struct Client* clients);
+int serve_client(int client_fd, int *auth, struct Client* clients);
 int main(int argc, char** argv)
+
+struct Client
+{
+	char *users="";
+	char *pass="";
+	int fd=0;
+	bool is_logged=0;
+};
 
 {
 	//initialise list of users and their passwords (temporary)
-	char *users[100];
-	char *pass[100];
-	int fds[100];
+	// char *users[100];
+	// char *pass[100];
+	// int fds[100];
 	int clients_auth[1000];
-	bool is_logged[100];
-	users[0]="user";
-	pass[0]="user";
+	// bool is_logged[100];
+
+	struct Client clients[100];
+	clients[0].users="user";
+	clients[0].pass="user";
 	int see=1;
 	char* ip_addr;
 	int port;
@@ -43,7 +53,10 @@ int main(int argc, char** argv)
 
 
 	//1. socket();
+
+	//main socket
 	int server_fd = socket(AF_INET,SOCK_STREAM,0);
+	
 	if(server_fd<0)
 	{
 		perror("socket");
@@ -54,8 +67,23 @@ int main(int argc, char** argv)
 		perror("setsock");
 		return -1;
 	}
+	//socket for file transfer
+
+	int file_transfer_fd = socket(AF_INET,SOCK_STREAM,0);
+	if(file_transfer_fd<0)
+	{
+		perror("socket");
+		return -1;
+	}
+	if(setsockopt(file_transfer_fd,SOL_SOCKET,SO_REUSEADDR,&(int){1},sizeof(int))<0)
+	{
+		perror("setsock");
+		return -1;
+	}
 
 	//2. bind ();
+
+	//main bind
 	struct sockaddr_in server_address;
 	bzero(&server_address,sizeof(server_address));
 	server_address.sin_family = AF_INET;
@@ -70,6 +98,20 @@ int main(int argc, char** argv)
 		server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 	if(bind(server_fd,(struct sockaddr*)&server_address,sizeof(server_address))<0)
+	{
+		perror("bind");
+		return -1;
+	}
+
+	//bind for file transfer
+
+	struct sockaddr_in file_address;
+	bzero(&file_address,sizeof(file_address));
+	file_address.sin_family = AF_INET;
+	file_address.sin_port = htons(5500);
+	file_address.sin_addr.s_addr = server_address.sin_addr.s_addr;
+
+	if(bind(file_transfer_fd,(struct sockaddr*)&file_address,sizeof(file_address))<0)
 	{
 		perror("bind");
 		return -1;
@@ -113,7 +155,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					if(serve_client(fd,clients_auth,users,pass,fds)==-1)
+					if(serve_client(fd,clients_auth,clients)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
@@ -130,6 +172,9 @@ int main(int argc, char** argv)
 			}
 
 		}
+		//checking for connections to file transfer server
+
+
 		
 	}
 
@@ -139,7 +184,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
+int serve_client(int client_fd, int *auth, struct Client *clients)
 {
 	char message[100];
 	char msgx[100];
@@ -154,7 +199,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		{
 			printf("Client disconnected \n");
 			int find = finder_fd(client_fd);
-			is_logged[find]=0;
+			clients[find].is_logged=0;
 			close(client_fd);
 			return -1;
 		}
@@ -167,14 +212,14 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"user")==0)
 		{
-			int check = finderu(para,users);
+			int check = finderu(para,clients);
 			if(check>=0)
 			{
 				strcpy(msgx,"Username OK, password required ");
 				//printf("%s",msgx);
 				send(client_fd,msgx,sizeof(msgx),0);
 				auth[client_fd]=1;
-				fds[check]=client_fd;
+				clients[check].fd=client_fd;
 			}
 			else
 			{
@@ -205,10 +250,10 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"pass")==0)
 		{
-			int check=finderp(para,pass);
-			if(check>=0 && fds[check]==client_fd)
+			int check=finderp(para,clients);
+			if(check>=0 && clients[check].fd==client_fd)
 			{	
-				if(is_logged[check]==1)
+				if(clients[check].is_logged==1)
 				{
 					printf("User is already logged in\n");
 					strcpy(msgx,"User logged in already, enter different details");
@@ -218,7 +263,7 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 				}
 				strcpy(msgx,"Authentication Complete");
 				auth[client_fd]=2;
-				is_logged[check]=1;
+				clients[check].is_logged=1;
 				printf("User Authenticated \n");
 				send(client_fd,msgx,sizeof(msgx),0);
 			}
@@ -243,22 +288,22 @@ int serve_client(int client_fd, int *auth, char** users, char** pass, int* fds)
 }
 
 //finds username if it exists
-int finderu(char* u,char** users)
+int finderu(char* u,struct Client clients)
 {
-	for(int i =0; i<1; i++)
+	for(int i =0; i<100; i++)
 	{
-		if(strcmp(users[i],u)==0)
+		if(strcmp(clients[i].users,u)==0)
 			return i;
 	}
 	return -1;
 }
 
 //finds password if it exists
-int finderp(char* p,char** pass)
+int finderp(char* p,struct Client clients)
 {
-	for(int i =0; i<1; i++)
+	for(int i =0; i<100; i++)
 	{
-		if(strcmp(pass[i],p)==0)
+		if(strcmp(clients[i].pass,p)==0)
 			return i;
 	}
 	return -1;
