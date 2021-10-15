@@ -10,6 +10,7 @@
 
 int finderu(char* u,struct Client* clients);
 int finderp(char* p,struct Client* clients);
+int finder_fd(int fd, struct Client* clients);
 int serve_client(int client_fd, int *auth, struct Client* clients);
 int main(int argc, char** argv)
 
@@ -18,6 +19,7 @@ struct Client
 	char *users="";
 	char *pass="";
 	int fd=0;
+	char current_path[100];
 	bool is_logged=0;
 };
 
@@ -125,10 +127,18 @@ struct Client
 		perror("listen");
 		return -1;
 	}
+
+	//select variables for main connection
 	fd_set full_fdset,ready_fdset;
 	FD_ZERO(&full_fdset);
 	FD_SET(server_fd,&full_fdset);
 	int max_fd = server_fd;
+
+	//select variables for file transfer connection
+	fd_set file_full_fdset, file_ready_fdset;
+	FD_ZERO(&full_fdset);
+	FD_SET(file_transfer_fd,&file_full_fdset);
+	int file_max_fd= file_transfer_fd;
 
 
 	//4. accept()
@@ -173,7 +183,43 @@ struct Client
 
 		}
 		//checking for connections to file transfer server
+		file_ready_fdset = file_full_fdset;
+		if(select(file_max_fd+1,&file_ready_fdset,NULL,NULL,NULL)<0)
+		{
+			perror("select");
+			return -1;
+		}
 
+		for(int fd = 0; fd<=file_max_fd; fd++)
+		{
+			if(FD_ISSET(fd,&file_ready_fdset))
+			{
+				if(fd==file_transfer_fd)
+				{
+					int file_new_fd = accept(file_transfer_fd,NULL,NULL);
+					// printf("client fd = %d \n",new_fd);
+					FD_SET(file_new_fd,&file_full_fdset);
+					if(file_new_fd>file_max_fd) file_max_fd=file_new_fd;
+				}
+				else
+				{
+					if(serve_client_files(fd,clients_auth,clients)==-1)
+					{
+						FD_CLR(fd,&full_fdset);
+						if(max_fd==fd)
+						{
+							for(int i=max_fd-1; i>=0; i--)
+								if(FD_ISSET(i,&full_fdset))
+								{
+									max_fd = i;
+									break;
+								}
+						}
+					}
+				}
+			}
+
+		}
 
 		
 	}
@@ -199,7 +245,8 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 		{
 			printf("Client disconnected \n");
 			int find = finder_fd(client_fd);
-			clients[find].is_logged=0;
+			if (find>=0)
+				clients[find].is_logged=0;
 			close(client_fd);
 			return -1;
 		}
@@ -283,12 +330,74 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 	else
 	{
 		//user has authenticated
+		char comm[100];
+		char para[100];
+		bzero(&comm,sizeof(comm));
+		bzero(&para,sizeof(para));
+		sscanf(message,"%s %s", comm , para);
+		if(strcmp(comm,"user")==0)
+		{
+			strcpy(msgx,"User has already logged in");
+			send(client_fd,msgx,sizeof(msgx),0);
+		}
+		else if (strcmp(comm,"pass")==0)
+		{
+			strcpy(msgx,"User has already logged in");
+			send(client_fd,msgx,sizeof(msgx),0);
+		}
+		else if (strcmp(comm,"get")==0 || strcmp(comm,"GET")==0)
+		{
+			for(int k=0; k<100; k++)
+			{
+				char *filepath=""
+				if (clients[k].fd==client_fd && clients[k].logged_in==1)
+				{
+					if(strcmp(clients[k].current_path,"")==0)
+						strcpy(filepath,para);
+					else
+					{	
+						strcpy(filepath,clients[k].current_path);
+						strcat(filepath,"/");
+						strcat(filepath,para);
+					}
+					FILE* fptr = fopen(filepath,"r");
+					if(!fptr)
+					{
+						perror("Cant open the file");
+					}
+				}
+					
+			}
+
+		}
+
+		else if (strcmp(comm,"put")==0 || strcmp(comm,"PUT")==0)
+		{
+
+		}
+		else if (strcmp(comm,"ls")==0 || strcmp(comm,"LS")==0)
+		{
+
+		}
+		else if (strcmp(comm,"pwd")==0 || strcmp(comm,"PWD")==0)
+		{
+
+		}
+		else if (strcmp(comm,"cd")==0 || strcmp(comm,"CD")==0)
+		{
+
+		}
+		else
+		{
+			strcpy(msgx,"Invalid Command");
+			send(client_fd,msgx,sizeof(msgx),0);
+		}
 		return 0;
 	}
 }
 
 //finds username if it exists
-int finderu(char* u,struct Client clients)
+int finderu(char* u,struct Client *clients)
 {
 	for(int i =0; i<100; i++)
 	{
@@ -299,11 +408,21 @@ int finderu(char* u,struct Client clients)
 }
 
 //finds password if it exists
-int finderp(char* p,struct Client clients)
+int finderp(char* p,struct Client *clients)
 {
 	for(int i =0; i<100; i++)
 	{
 		if(strcmp(clients[i].pass,p)==0)
+			return i;
+	}
+	return -1;
+}
+
+int finder_fd(int fd, struct Client *clients)
+{
+	for(int i =0; i<100; i++)
+	{
+		if(fd==client[i].fd)
 			return i;
 	}
 	return -1;
