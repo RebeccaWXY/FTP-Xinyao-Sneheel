@@ -1,14 +1,12 @@
 #include<stdio.h>
-#include<stdlib.h>
-#include <sys/socket.h> 
+#include<string.h>
+#include<sys/socket.h>
 #include<sys/types.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <unistd.h>
+#include<arpa/inet.h>
+#include<unistd.h>
 
-int main(int argc, char *argv[])
+int main()
 {
-	
 	//1. socket();
 	int server_fd = socket(AF_INET,SOCK_STREAM,0);
 	printf("server_fd = %d \n",server_fd);
@@ -31,6 +29,35 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	//3. send/recv
+	char filename[50];
+	//rcv
+	if(argc<2)
+	{
+		printf("Enter the file name: ");
+		scanf("%s",filename);
+	}
+
+	else
+		strcpy(filename,argv[1]);
+	
+	send(srv_socket,filename,strlen(filename),0);
+	printf("Requesting file %s \n",filename);
+	char buffer[1500];
+	int bytes;
+	FILE *fptr;
+	if(!(fptr = fopen(filename,"w")))
+		perror("Cant create file");
+	else
+	{
+		do
+		{
+			bytes = recv(srv_socket,buffer,sizeof(buffer),0);
+			if(bytes>0)
+				fwrite(buffer,bytes,1,fptr);
+		}while(bytes>0);
+		fclose(fptr);
+	}
+
 	while(1)
 	{
 		char user_input[100];
@@ -48,5 +75,3 @@ int main(int argc, char *argv[])
 	close(server_fd);
 
 	return 0;
-	
-}
