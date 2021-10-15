@@ -7,6 +7,8 @@
 #include<sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
 
 int finderu(char* u,struct Client* clients);
 int finderp(char* p,struct Client* clients);
@@ -14,13 +16,17 @@ int finder_fd(int fd, struct Client* clients);
 int serve_client(int client_fd, int *auth, struct Client* clients);
 int main(int argc, char** argv)
 
-struct Client
-{
-	char *users="";
-	char *pass="";
-	int fd=0;
-	char current_path[100];
-	bool is_logged=0;
+
+struct Client{
+	char *users;
+	char *pass;
+	//*users = "";
+	//*pass = "";
+
+	int fd;
+	//fd=0;
+	bool is_logged;
+	//is_logged = 0;
 };
 
 {
