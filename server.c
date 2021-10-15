@@ -9,12 +9,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define MAX_PATH 600
+#define NUM_USERS 100
+#define MAX_CLIENTS 1000
 
-int finderu(char* u,struct Client* clients);
-int finderp(char* p,struct Client* clients);
-int finder_fd(int fd, struct Client* clients);
-int serve_client(int client_fd, int *auth, struct Client* clients);
-int main(int argc, char** argv)
 
 
 struct Client{
@@ -22,12 +20,21 @@ struct Client{
 	char *pass;
 	//*users = "";
 	//*pass = "";
-
+	char *current_path;
 	int fd;
 	//fd=0;
 	bool is_logged;
 	//is_logged = 0;
 };
+
+int finderu(char* u,struct Client clients[100]);
+int finderp(char* p,struct Client clients[100]);
+int finder_fd(int fd, struct Client clients[100]);
+int serve_client(int client_fd, int *auth, struct Client clients[100]);
+
+
+
+int main(int argc, char** argv)
 
 {
 	//initialise list of users and their passwords (temporary)
@@ -38,8 +45,13 @@ struct Client{
 	// bool is_logged[100];
 
 	struct Client clients[100];
+
 	clients[0].users="user";
 	clients[0].pass="user";
+	clients[0].is_logged=0;
+	clients[0].fd=0;
+	getcwd(clients[0].current_path,MAX_PATH);
+
 	int see=1;
 	char* ip_addr;
 	int port;
@@ -49,8 +61,15 @@ struct Client{
 	for(int i=0;i<1000;i++)
 		clients_auth[i]=0;
 
-	for(int i=0;i<100;i++)
-		is_logged[i]=0;
+	for(int i=1;i<100;i++)
+	{
+		clients[i].is_logged=0;
+		clients[i].users="";
+		clients[i].pass="";
+		clients[i].fd=0;
+		getcwd(clients[i].current_path,MAX_PATH);
+	}
+
 
 	// Reads in port and ip
 	if(see==0)
@@ -196,36 +215,36 @@ struct Client{
 			return -1;
 		}
 
-		for(int fd = 0; fd<=file_max_fd; fd++)
-		{
-			if(FD_ISSET(fd,&file_ready_fdset))
-			{
-				if(fd==file_transfer_fd)
-				{
-					int file_new_fd = accept(file_transfer_fd,NULL,NULL);
-					// printf("client fd = %d \n",new_fd);
-					FD_SET(file_new_fd,&file_full_fdset);
-					if(file_new_fd>file_max_fd) file_max_fd=file_new_fd;
-				}
-				else
-				{
-					if(serve_client_files(fd,clients_auth,clients)==-1)
-					{
-						FD_CLR(fd,&full_fdset);
-						if(max_fd==fd)
-						{
-							for(int i=max_fd-1; i>=0; i--)
-								if(FD_ISSET(i,&full_fdset))
-								{
-									max_fd = i;
-									break;
-								}
-						}
-					}
-				}
-			}
+		// for(int fd = 0; fd<=file_max_fd; fd++)
+		// {
+		// 	if(FD_ISSET(fd,&file_ready_fdset))
+		// 	{
+		// 		if(fd==file_transfer_fd)
+		// 		{
+		// 			int file_new_fd = accept(file_transfer_fd,NULL,NULL);
+		// 			// printf("client fd = %d \n",new_fd);
+		// 			FD_SET(file_new_fd,&file_full_fdset);
+		// 			if(file_new_fd>file_max_fd) file_max_fd=file_new_fd;
+		// 		}
+		// 		else
+		// 		{
+		// 			if(serve_client_files(fd,clients_auth,clients)==-1)
+		// 			{
+		// 				FD_CLR(fd,&full_fdset);
+		// 				if(max_fd==fd)
+		// 				{
+		// 					for(int i=max_fd-1; i>=0; i--)
+		// 						if(FD_ISSET(i,&full_fdset))
+		// 						{
+		// 							max_fd = i;
+		// 							break;
+		// 						}
+		// 				}
+		// 			}
+		// 		}
+		// 	}
 
-		}
+		// }
 
 		
 	}
@@ -236,7 +255,7 @@ struct Client{
 	return 0;
 }
 
-int serve_client(int client_fd, int *auth, struct Client *clients)
+int serve_client(int client_fd, int *auth, struct Client clients[100])
 {
 	char message[100];
 	char msgx[100];
@@ -250,7 +269,7 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 	if(strcmp(message,"quit")==0)
 		{
 			printf("Client disconnected \n");
-			int find = finder_fd(client_fd);
+			int find = finder_fd(client_fd,clients);
 			if (find>=0)
 				clients[find].is_logged=0;
 			close(client_fd);
@@ -268,11 +287,21 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 			int check = finderu(para,clients);
 			if(check>=0)
 			{
-				strcpy(msgx,"Username OK, password required ");
-				//printf("%s",msgx);
-				send(client_fd,msgx,sizeof(msgx),0);
-				auth[client_fd]=1;
-				clients[check].fd=client_fd;
+				if(clients[check].is_logged==0)
+				{
+					strcpy(msgx,"Username OK, password required ");
+					//printf("%s",msgx);
+					send(client_fd,msgx,sizeof(msgx),0);
+					auth[client_fd]=1;
+					clients[check].fd=client_fd;
+				}
+				else
+				{
+					printf("User is already logged in\n");
+					strcpy(msgx,"User logged in already, enter different details");
+					send(client_fd,msgx,sizeof(msgx),0);
+					return 0;
+				}
 			}
 			else
 			{
@@ -303,17 +332,9 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 		sscanf(message,"%s %s", comm , para);
 		if(strcmp(comm,"pass")==0)
 		{
-			int check=finderp(para,clients);
-			if(check>=0 && clients[check].fd==client_fd)
+			int check=finder_fd(client_fd,clients);
+			if(check>=0 && strcmp(clients[check].pass,para)==0)
 			{	
-				if(clients[check].is_logged==1)
-				{
-					printf("User is already logged in\n");
-					strcpy(msgx,"User logged in already, enter different details");
-					send(client_fd,msgx,sizeof(msgx),0);
-					auth[client_fd]=0;
-					return 0;
-				}
 				strcpy(msgx,"Authentication Complete");
 				auth[client_fd]=2;
 				clients[check].is_logged=1;
@@ -336,11 +357,18 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 	else
 	{
 		//user has authenticated
+		int mark = finder_fd(client_fd,clients);
+		//setting current directory to current working directory in server for the client being served
+		int m=chdir(clients[mark].current_path);
+
+		//reading the instruction sent
 		char comm[100];
 		char para[100];
 		bzero(&comm,sizeof(comm));
 		bzero(&para,sizeof(para));
 		sscanf(message,"%s %s", comm , para);
+
+		//cases
 		if(strcmp(comm,"user")==0)
 		{
 			strcpy(msgx,"User has already logged in");
@@ -353,75 +381,86 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 		}
 		else if (strcmp(comm,"get")==0 || strcmp(comm,"GET")==0)
 		{
-			//filepath stores the address of the file
-			char *filepath="";
-			for(int k=0; k<100; k++)
+			FILE* fptr = fopen(para,"r");
+			if(!fptr)
 			{
-				if (clients[k].fd==client_fd && clients[k].logged_in==1)
-				{
-					if(strcmp(clients[k].current_path,"")==0)
-						strcpy(filepath,para);
-					else
-					{	
-						strcpy(filepath,clients[k].current_path);
-						strcat(filepath,"/");
-						strcat(filepath,para);
-					}
-					FILE* fptr = fopen(filepath,"r");
-					if(!fptr)
-					{
-						perror("Cant open the file");
-						strcpy(msgx,"nonexisted");
-						send(client_fd,msgx,sizeof(msgx));
-						return 0;
-					}
-					else
-					{
-						strcpy(msgx,"existed");
-						send(client_fd,msgx,sizeof(msgx));
-						//code to enable file transfer
-						return 0;
-					}
-
-				}
-					
+				perror("Cant open the file");
+				strcpy(msgx,"nonexisted");
+				send(client_fd,msgx,sizeof(msgx),0);
+				return 0;
 			}
-
+			else
+			{
+				strcpy(msgx,"existed");
+				send(client_fd,msgx,sizeof(msgx),0);
+				//code to enable file transfer
+				return 0;
+			}
 		}
 		//implementing the put command
 		else if (strcmp(comm,"put")==0 || strcmp(comm,"PUT")==0)
 		{
-			//filepath stores the address where the file needs to be created
-			char* filepath="";
-			for(int k=0; k<100; k++)
-			{	
-				if (clients[k].fd==client_fd && clients[k].logged_in==1)
-				{
-					if(strcmp(clients[k].current_path,"")==0)
-						strcpy(filepath,para);
-					else
-					{	
-						strcpy(filepath,clients[k].current_path);
-						strcat(filepath,"/");
-						strcat(filepath,para);
-					}
-					FILE* fptr = fopen(filepath,"w");
-					
 
-				}
-			}
+			FILE* fptr = fopen(para,"w");
+			//code to enable file transfer
 
 		}
+
+		//implementing the ls command
 		else if (strcmp(comm,"ls")==0 || strcmp(comm,"LS")==0)
 		{
+			FILE* fp = popen(message,"r");
+			char path[MAX_PATH];
+			bzero(&path,sizeof(path));
+			if(fp==NULL)
+			{
+				strcpy(msgx,"wrong command usage");
+				send(client_fd,msgx,sizeof(msgx),0);
+			}
+			else
+			{
+				strcpy(msgx,"succesfully executed!");
+				send(client_fd,msgx,sizeof(msgx),0);
+				while(fgets(path, MAX_PATH, fp) != NULL)
+				{
+					send(client_fd,path,sizeof(path),0);
+					printf("%s", path);
+					bzero(&path,sizeof(path));
+				}	
 
+			}
+			int status = pclose(fp);
+			if(status==-1)
+				printf("Error- pclose");
+			return 0;
 		}
+
+		//implementing the pwd command
 		else if (strcmp(comm,"pwd")==0 || strcmp(comm,"PWD")==0)
 		{
-
+			strcpy(msgx,clients[mark].current_path);
+			send(client_fd,msgx,sizeof(msgx),0);
+			return 0;
 		}
+
+		//implementing the cd command
+
 		else if (strcmp(comm,"cd")==0 || strcmp(comm,"CD")==0)
 		{
+			int f = chdir(para);
+			if(f==0)
+			{
+				strcpy(msgx,"Changed directory succesfully");
+				send(client_fd,msgx,sizeof(msgx),0);
+				getcwd(clients[mark].current_path,MAX_PATH);
+
+			} 
+			else
+			{
+				strcpy(msgx,"Directory change unsuccesful");
+				send(client_fd,msgx,sizeof(msgx),0);
+			}
+			return 0;
 
 		}
 		else
@@ -434,7 +473,7 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 }
 
 //finds username if it exists
-int finderu(char* u,struct Client *clients)
+int finderu(char* u,struct Client clients[100])
 {
 	for(int i =0; i<100; i++)
 	{
@@ -445,7 +484,7 @@ int finderu(char* u,struct Client *clients)
 }
 
 //finds password if it exists
-int finderp(char* p,struct Client *clients)
+int finderp(char* p,struct Client clients[100])
 {
 	for(int i =0; i<100; i++)
 	{
@@ -455,11 +494,11 @@ int finderp(char* p,struct Client *clients)
 	return -1;
 }
 
-int finder_fd(int fd, struct Client *clients)
+int finder_fd(int fd, struct Client clients[100])
 {
 	for(int i =0; i<100; i++)
 	{
-		if(fd==client[i].fd)
+		if(fd==clients[i].fd)
 			return i;
 	}
 	return -1;
