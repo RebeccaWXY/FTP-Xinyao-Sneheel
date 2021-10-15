@@ -347,9 +347,10 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 		}
 		else if (strcmp(comm,"get")==0 || strcmp(comm,"GET")==0)
 		{
+			//filepath stores the address of the file
+			char *filepath="";
 			for(int k=0; k<100; k++)
 			{
-				char *filepath=""
 				if (clients[k].fd==client_fd && clients[k].logged_in==1)
 				{
 					if(strcmp(clients[k].current_path,"")==0)
@@ -364,15 +365,45 @@ int serve_client(int client_fd, int *auth, struct Client *clients)
 					if(!fptr)
 					{
 						perror("Cant open the file");
+						strcpy(msgx,"nonexisted");
+						send(client_fd,msgx,sizeof(msgx));
+						return 0;
 					}
+					else
+					{
+						strcpy(msgx,"existed");
+						send(client_fd,msgx,sizeof(msgx));
+						//code to enable file transfer
+						return 0;
+					}
+
 				}
 					
 			}
 
 		}
-
+		//implementing the put command
 		else if (strcmp(comm,"put")==0 || strcmp(comm,"PUT")==0)
 		{
+			//filepath stores the address where the file needs to be created
+			char* filepath="";
+			for(int k=0; k<100; k++)
+			{	
+				if (clients[k].fd==client_fd && clients[k].logged_in==1)
+				{
+					if(strcmp(clients[k].current_path,"")==0)
+						strcpy(filepath,para);
+					else
+					{	
+						strcpy(filepath,clients[k].current_path);
+						strcat(filepath,"/");
+						strcat(filepath,para);
+					}
+					FILE* fptr = fopen(filepath,"w");
+					
+
+				}
+			}
 
 		}
 		else if (strcmp(comm,"ls")==0 || strcmp(comm,"LS")==0)
