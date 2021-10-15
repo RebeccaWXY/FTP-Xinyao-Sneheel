@@ -5,9 +5,10 @@
 #include<arpa/inet.h>
 #include<unistd.h>
 
-int main()
+int main(int argc, char** argv)
 {
 	//1. socket();
+	int srv_socket = socket(AF_INET,SOCK_STREAM,0);	
 	int server_fd = socket(AF_INET,SOCK_STREAM,0);
 	printf("server_fd = %d \n",server_fd);
 	if(server_fd<0)
@@ -75,3 +76,4 @@ int main()
 	close(server_fd);
 
 	return 0;
+}
