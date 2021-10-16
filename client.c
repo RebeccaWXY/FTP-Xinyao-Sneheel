@@ -85,9 +85,18 @@ int main(int argc, char** argv)
 		
 		
 		
-		/*codes to be filled: put, get, cd, ls, pwd, ...!cd*/
+		/*codes to be filled: put, get*/
 		
 		
+		else if (strcmp(input_command, "cd")==0 || strcmp(input_command, "ls")==0 ||strcmp(input_command, "pwd")==0){
+		//if the command is "cd . . . ", "ls . . .", or "pwd"
+			send(srv_socket, input_total, MAX_LENGTH,0);
+			//1 . send the command to the server
+		    valread = read(srv_socket, buffer, 1024);
+			//2 . fgets a reply line from the socket to see if the command is successfully executed
+		    printf("%s\n", buffer);		
+			//3 . read from the socket and display correspondingly.
+		}
 		
 		
 		else if (strcmp(input_command, "!ls")==0){
@@ -113,7 +122,31 @@ int main(int argc, char** argv)
 				printf("error getting cwd\n");
 			}
 			//1 . call system (command) locally
-		}		
+		}
+		
+		else if (strcmp(input_command,"!cd")==0 || strcmp(input_command,"!CD")==0)
+		{
+			char new_dir[200];
+			strcpy(new_dir,input_parameters);
+			int f;
+			if (argc<3){
+				f = chdir("..");
+			} else {
+				f = chdir(new_dir);
+			}
+			if(f==0)
+			{
+				printf("successfully changed\n");
+				printf("current directory: %s\n", new_dir);
+			} 
+			else
+			{
+				printf("Directory change unsuccesful");
+			}
+		}
+		//if the command is "!cd directory"
+			//1 . call chdir (directory) locally . Note that system ( ) cannot execute "cd . . . "
+		
 		else if (strcmp(input_command, "quit")==0){
 		//if the command is "quit"
 			close(srv_socket);
