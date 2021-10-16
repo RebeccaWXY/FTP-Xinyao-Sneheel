@@ -82,8 +82,38 @@ int main(int argc, char** argv)
 			//is successfully executed and display it to the user
 		}
 		
-		/*codes to be filled*/
 		
+		
+		
+		/*codes to be filled: put, get, cd, ls, pwd, ...!cd*/
+		
+		
+		
+		
+		else if (strcmp(input_command, "!ls")==0){
+		//if the command is "!ls . . ."
+			DIR *d;
+			struct dirent *dir;
+			d = opendir(".");
+			if (d){
+				while((dir = readdir(d)) != NULL){
+					printf("%s\n", dir->d_name);
+				}
+				closedir(d);
+			}
+			//1 . call system (command) locally
+		}
+
+		else if (strcmp(input_command, "!pwd")==0){
+		//if the command is "!pwd"-]
+			char cwd_client[200];
+			if (getcwd(cwd_client, sizeof(cwd_client)) != NULL){
+				printf("%s\n", cwd_client);
+			} else {
+				printf("error getting cwd\n");
+			}
+			//1 . call system (command) locally
+		}		
 		else if (strcmp(input_command, "quit")==0){
 		//if the command is "quit"
 			close(srv_socket);
