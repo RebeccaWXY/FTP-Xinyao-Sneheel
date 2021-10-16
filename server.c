@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <pthread.h> 
 
 #define MAX_PATH 600
 #define NUM_USERS 100
@@ -23,10 +24,17 @@ struct Client{
 	bool is_logged;
 };
 
+struct arg_struct{
+	int ffd;
+	char *fname;
+};
+
 int finderu(char* u,struct Client clients[100]);
 int finderp(char* p,struct Client clients[100]);
 int finder_fd(int fd, struct Client clients[100]);
 int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100]);
+void* get_client(void* arguments);
+void* put_client(void* arguments);
 
 
 //main function
@@ -387,40 +395,22 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			{
 				strcpy(msgx,"existed");
 				send(client_fd,msgx,sizeof(msgx),0);
-				//code to enable file transfer
-				char buffer[1500];
-				int bytes;
-				while(1)
-				{
-					int client_sd = accept(file_transfer_fd,NULL,NULL);
-					if(client_sd<0)
-					{
-						perror("accept ");
-						return -1;
-					}
-
-					else
-					{
-						int bytes=0;
-						char buffer[1500];
-						do
-						{
-							int i;
-							for(i=0; i<1500; i++)
-							{
-								char ch = fgetc(fptr);
-								if(feof(fptr)) break;
-								buffer[i] = ch;
-							}
-							bytes+=i;
-							send(client_sd,buffer,i,0);
-						}while(!feof(fptr));
-						printf("Bytes sent %d \n",bytes);
-						break;
-					}
-					close(client_sd);
-				}
 				fclose(fptr);
+				int client_sd = accept(file_transfer_fd,NULL,NULL);
+				if(client_sd<0)
+				{
+					perror("accept ");
+					fclose(fptr);
+				}
+				else
+				{
+					fclose(fptr);
+					struct arg_struct args;
+					args.ffd=client_sd;
+					strcpy(args.fname,para);
+					pthread_t thread_id;
+					pthread_create(&thread_id,NULL,get_client,&args);
+				}
 			}
 			return 0;
 		}
@@ -435,31 +425,21 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			}
 			else
 			{	
-				char buffer[1500];
-				int bytes;
-				//code to enable file transfer
-				while(1)
-				{
-					int client_sd = accept(file_transfer_fd,NULL,NULL);
-					if(client_sd<0)
-					{
-						perror("accept ");
-						return -1;
-					}
-					else
-					{
-						do
-						{
-							bytes = recv(client_sd,buffer,sizeof(buffer),0);
-							if(bytes>0)
-								fwrite(buffer,bytes,1,fptr);
-						}while(bytes>0);
-						printf("Bytes received %d \n",bytes);
-						break;
-					}
-					close(client_sd);
-				}
 				fclose(fptr);
+				//code to enable file transfer
+				int client_sd = accept(file_transfer_fd,NULL,NULL);
+				if(client_sd<0)
+				{
+					perror("accept ");
+				}
+				else
+				{
+					struct arg_struct args;
+					args.ffd=client_sd;
+					strcpy(args.fname,para);
+					pthread_t thread_id;
+					pthread_create(&thread_id,NULL,put_client,&args);
+				}
 			}
 
 			return 0;
@@ -542,6 +522,47 @@ int finderu(char* u,struct Client clients[100])
 	return -1;
 }
 
+void* get_client(void* arguments)
+{
+	char buffer[1500];
+	int bytes=0;
+	struct arg_struct args = *(struct arg_struct*)arguments;
+	int client_sd= args.ffd;
+	FILE* fptr = fopen(args.fname,"w");
+	do
+	{
+		int i;
+		for(i=0; i<1500; i++)
+		{
+			char ch = fgetc(fptr);
+			if(feof(fptr)) break;
+			buffer[i] = ch;
+		}
+		bytes+=i;
+		send(client_sd,buffer,i,0);
+	}while(!feof(fptr));
+	printf("Bytes sent %d \n",bytes);
+	close(client_sd);
+	fclose(fptr);
+}
+
+void* put_client(void* arguments)
+{
+	char buffer[1500];
+	int bytes;
+	struct arg_struct args = *(struct arg_struct*)arguments;
+	int client_sd= args.ffd;
+	FILE* fptr = fopen(args.fname,"w");
+	do
+	{
+		bytes = recv(client_sd,buffer,sizeof(buffer),0);
+		if(bytes>0)
+			fwrite(buffer,bytes,1,fptr);
+	}while(bytes>0);
+	printf("Bytes received %d \n",bytes);
+	close(client_sd);
+	fclose(fptr);
+}
 //finds password if it exists
 int finderp(char* p,struct Client clients[100])
 {
