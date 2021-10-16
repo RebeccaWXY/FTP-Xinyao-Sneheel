@@ -19,7 +19,7 @@
 struct Client{
 	char *users;
 	char *pass;
-	char *current_path;
+	char current_path[MAX_PATH];
 	int fd;
 	bool is_logged;
 };
@@ -53,6 +53,7 @@ int main(int argc, char** argv)
 	clients[0].is_logged=0;
 	clients[0].fd=0;
 	getcwd(clients[0].current_path,MAX_PATH);
+	printf("%s \n",clients[0].current_path);
 
 	for(int i=0;i<1000;i++)
 		clients_auth[i]=0;
