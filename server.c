@@ -26,7 +26,7 @@ struct Client{
 int finderu(char* u,struct Client clients[100]);
 int finderp(char* p,struct Client clients[100]);
 int finder_fd(int fd, struct Client clients[100]);
-int serve_client(int client_fd, int *auth, struct Client clients[100]);
+int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100]);
 
 
 //main function
@@ -184,7 +184,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					if(serve_client(fd,clients_auth,clients)==-1)
+					if(serve_client(fd,file_transfer_fd,clients_auth,clients)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
@@ -249,7 +249,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int serve_client(int client_fd, int *auth, struct Client clients[100])
+int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100])
 {
 	char message[100];
 	char msgx[100];
@@ -398,7 +398,7 @@ int serve_client(int client_fd, int *auth, struct Client clients[100])
 						perror("accept ");
 						return -1;
 					}
-					
+
 					else
 					{
 						int bytes=0;
@@ -418,11 +418,11 @@ int serve_client(int client_fd, int *auth, struct Client clients[100])
 						printf("Bytes sent %d \n",bytes);
 						break;
 					}
+					close(client_sd);
 				}
 				fclose(fptr);
-				close(client_sd);
-				return 0;
 			}
+			return 0;
 		}
 		//implementing the put command
 		else if (strcmp(comm,"put")==0 || strcmp(comm,"PUT")==0)
@@ -457,9 +457,9 @@ int serve_client(int client_fd, int *auth, struct Client clients[100])
 						printf("Bytes received %d \n",bytes);
 						break;
 					}
+					close(client_sd);
 				}
 				fclose(fptr);
-				close(client_sd);
 			}
 
 			return 0;
