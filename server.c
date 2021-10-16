@@ -18,13 +18,9 @@
 struct Client{
 	char *users;
 	char *pass;
-	//*users = "";
-	//*pass = "";
 	char *current_path;
 	int fd;
-	//fd=0;
 	bool is_logged;
-	//is_logged = 0;
 };
 
 int finderu(char* u,struct Client clients[100]);
@@ -33,30 +29,22 @@ int finder_fd(int fd, struct Client clients[100]);
 int serve_client(int client_fd, int *auth, struct Client clients[100]);
 
 
+//main function
 
 int main(int argc, char** argv)
 
 {
-	//initialise list of users and their passwords (temporary)
-	// char *users[100];
-	// char *pass[100];
-	// int fds[100];
+
+	//array to keep a check on if a given file descrptor has been authorized
 	int clients_auth[1000];
-	// bool is_logged[100];
-
+	//to store a user's data
 	struct Client clients[100];
-
+	//initialising all authorized users
 	clients[0].users="user";
 	clients[0].pass="user";
 	clients[0].is_logged=0;
 	clients[0].fd=0;
 	getcwd(clients[0].current_path,MAX_PATH);
-
-	int see=1;
-	char* ip_addr;
-	int port;
-	if(argc==3)
-		see=0;
 
 	for(int i=0;i<1000;i++)
 		clients_auth[i]=0;
@@ -70,6 +58,12 @@ int main(int argc, char** argv)
 		getcwd(clients[i].current_path,MAX_PATH);
 	}
 
+	//takes in ip address and port if they are given
+	int see=1;
+	char* ip_addr;
+	int port;
+	if(argc==3)
+		see=0;
 
 	// Reads in port and ip
 	if(see==0)
@@ -160,10 +154,10 @@ int main(int argc, char** argv)
 	int max_fd = server_fd;
 
 	//select variables for file transfer connection
-	fd_set file_full_fdset, file_ready_fdset;
-	FD_ZERO(&full_fdset);
-	FD_SET(file_transfer_fd,&file_full_fdset);
-	int file_max_fd= file_transfer_fd;
+	// fd_set file_full_fdset, file_ready_fdset;
+	// FD_ZERO(&full_fdset);
+	// FD_SET(file_transfer_fd,&file_full_fdset);
+	// int file_max_fd= file_transfer_fd;
 
 
 	//4. accept()
@@ -208,12 +202,12 @@ int main(int argc, char** argv)
 
 		}
 		//checking for connections to file transfer server
-		file_ready_fdset = file_full_fdset;
-		if(select(file_max_fd+1,&file_ready_fdset,NULL,NULL,NULL)<0)
-		{
-			perror("select");
-			return -1;
-		}
+		// file_ready_fdset = file_full_fdset;
+		// if(select(file_max_fd+1,&file_ready_fdset,NULL,NULL,NULL)<0)
+		// {
+		// 	perror("select");
+		// 	return -1;
+		// }
 
 		// for(int fd = 0; fd<=file_max_fd; fd++)
 		// {
@@ -394,6 +388,39 @@ int serve_client(int client_fd, int *auth, struct Client clients[100])
 				strcpy(msgx,"existed");
 				send(client_fd,msgx,sizeof(msgx),0);
 				//code to enable file transfer
+				char buffer[1500];
+				int bytes;
+				while(1)
+				{
+					int client_sd = accept(file_transfer_fd,NULL,NULL);
+					if(client_sd<0)
+					{
+						perror("accept ");
+						return -1;
+					}
+					
+					else
+					{
+						int bytes=0;
+						char buffer[1500];
+						do
+						{
+							int i;
+							for(i=0; i<1500; i++)
+							{
+								char ch = fgetc(fptr);
+								if(feof(fptr)) break;
+								buffer[i] = ch;
+							}
+							bytes+=i;
+							send(client_sd,buffer,i,0);
+						}while(!feof(fptr));
+						printf("Bytes sent %d \n",bytes);
+						break;
+					}
+				}
+				fclose(fptr);
+				close(client_sd);
 				return 0;
 			}
 		}
@@ -402,8 +429,40 @@ int serve_client(int client_fd, int *auth, struct Client clients[100])
 		{
 
 			FILE* fptr = fopen(para,"w");
-			//code to enable file transfer
+			if(!fptr)
+			{
+				perror("File creation error");
+			}
+			else
+			{	
+				char buffer[1500];
+				int bytes;
+				//code to enable file transfer
+				while(1)
+				{
+					int client_sd = accept(file_transfer_fd,NULL,NULL);
+					if(client_sd<0)
+					{
+						perror("accept ");
+						return -1;
+					}
+					else
+					{
+						do
+						{
+							bytes = recv(client_sd,buffer,sizeof(buffer),0);
+							if(bytes>0)
+								fwrite(buffer,bytes,1,fptr);
+						}while(bytes>0);
+						printf("Bytes received %d \n",bytes);
+						break;
+					}
+				}
+				fclose(fptr);
+				close(client_sd);
+			}
 
+			return 0;
 		}
 
 		//implementing the ls command
