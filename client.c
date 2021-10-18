@@ -133,7 +133,7 @@ int main(int argc, char** argv)
 		*/
 
 		
-		else if (strcmp(input_command, "cd")==0 || strcmp(input_command, "ls")==0 ||strcmp(input_command, "pwd")==0){
+		else if (strcmp(input_command, "cd")==0 ||strcmp(input_command, "pwd")==0){
 		//if the command is "cd . . . ", "ls . . .", or "pwd"
 			send(srv_socket, input_total, MAX_LENGTH,0);
 			//1 . send the command to the server
@@ -143,19 +143,41 @@ int main(int argc, char** argv)
 			//3 . read from the socket and display correspondingly.
 		}
 		
-		
+		else if (strcmp(input_command, "ls")==0)
+		{
+			send(srv_socket, input_total, MAX_LENGTH,0);
+			//1 . send the command to the server
+		    valread = read(srv_socket, buffer, 1024);
+			//2 . fgets a reply line from the socket to see if the command is successfully executed
+		    printf("%s\n", buffer);		
+			//3 . read from the socket and display correspondingly.
+		    bzero(&buffer,sizeof(buffer));
+			do
+			{
+				valread = read(srv_socket,buffer,sizeof(buffer));
+				if(strcmp(buffer,"bye")==0)
+					break;
+				if(valread!=0)
+					printf("%s",buffer);
+			}while(valread!=0);
+		}
+
 		else if (strcmp(input_command, "!ls")==0){
 		//if the command is "!ls . . ."
-			DIR *d;
-			struct dirent *dir;
-			d = opendir(".");
-			if (d){
-				while((dir = readdir(d)) != NULL){
-					printf("%s\n", dir->d_name);
-				}
-				closedir(d);
-			}
+			// DIR *d;
+			// struct dirent *dir;
+			// d = opendir(".");
+			// if (d){
+			// 	while((dir = readdir(d)) != NULL){
+			// 		printf("%s\n", dir->d_name);
+			// 	}
+			// 	closedir(d);
+			// }
 			//1 . call system (command) locally
+			char buff[MAX_LENGTH];
+			strcpy(buff,"ls ");
+			strcat(buff,input_parameters);
+			system(buff);
 		}
 
 		else if (strcmp(input_command, "!pwd")==0){

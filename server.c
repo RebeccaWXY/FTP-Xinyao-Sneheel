@@ -450,7 +450,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 		else if (strcmp(comm,"ls")==0 || strcmp(comm,"LS")==0)
 		{
 			FILE* fp = popen(message,"r");
-			char path[MAX_PATH];
+			char path[1024];
 			bzero(&path,sizeof(path));
 			if(fp==NULL)
 			{
@@ -461,17 +461,18 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			{
 				strcpy(msgx,"succesfully executed!");
 				send(client_fd,msgx,sizeof(msgx),0);
-				while(fgets(path, MAX_PATH, fp) != NULL)
+				while(fgets(path, 1024, fp) != NULL)
 				{
-					send(client_fd,path,sizeof(path),0);
+					send(client_fd,path,1024,0);
 					printf("%s", path);
-					bzero(&path,sizeof(path));
+					// bzero(&path,sizeof(path));
 				}	
 
 			}
 			int status = pclose(fp);
 			if(status==-1)
 				printf("Error- pclose");
+			send(client_fd,"bye",sizeof("bye"),0);
 			return 0;
 		}
 
