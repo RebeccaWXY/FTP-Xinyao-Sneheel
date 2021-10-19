@@ -140,27 +140,46 @@ int main(int argc, char** argv)
 			//6 . close the TCP connection
 		}
 
-		/*
-		if(){
+		else if (strcmp(input_command, "get")==0){
 		//if the command is "get a file "
-	
+			message_exchange(srv_socket, buffer, input_total);
 			//1 . send the command to the server
-	
 			//2 . fgets first line from the server : existed or non−existed
-	
+			if (strcmp(buffer,"existed")==0){
 			//3 . if existed
-		
+				printf("situation 1: exists\n");
+				if(connect(file_socket,(struct sockaddr*) &file_transfer_address,sizeof(file_transfer_address))==-1)
+				{
+					perror("Connect: ");
+					return -1;
+				}
 				//3. 1 open a new TCP connection to server
-		
+				char buffer[1500];
+				int bytes;
+				FILE *fptr;
+				if(!(fptr = fopen(input_parameters,"w")))
+					perror("Cant create file");
+				else
+				{
+					do
+					{
+						bytes = recv(file_socket,buffer,sizeof(buffer),0);
+						if(bytes>0)
+							fwrite(buffer,bytes,1,fptr);
+					}while(bytes>0);
+					fclose(fptr);
+				}
 				//3. 1 read the file from the server
-		
 				//3. 2 write the file to the local directory
-		
+				close(file_socket);
 				//3. 3 close the new TCP connection
-	
+			} else {	
+				printf("situation 2: %s\n", buffer);
+				printf("%s: no such file on server\n", input_parameters);
 			//4 . if non−existed display "file name : no such file on server"
+			}
 		}
-		*/
+		
 		else if (strcmp(input_command, "ls")==0)
 		{
 			message_exchange(srv_socket, buffer, input_total);
