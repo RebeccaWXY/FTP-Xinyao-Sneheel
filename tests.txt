@@ -78,8 +78,8 @@ ls
 put long_vid03.mp4
 ls
 /*client 2 side*/
-user USER1
-pass USER1
+user
+pass
 ls
 !ls
 put long_vid01.mp4
