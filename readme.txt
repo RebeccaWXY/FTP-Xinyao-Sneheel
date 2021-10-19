@@ -1,8 +1,8 @@
 Client:
 Server works primarily according to the pseudocode given, with message_exchange() separated as a function. 
-GET:
+GET: after exchanging messages with server, start a new TCP connection to server and close the connection after receiving all bytes and writing them into buffer. 
 
-PUT: 
+PUT: after sending the request to put file, start a new ICP connection to server and close the connection after sending all bytes to server. 
 
 ls: read the continuous message from server and output until the last file is given. 
 
