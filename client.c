@@ -177,16 +177,20 @@ int message_exchange(int srv_socket, char * buffer, char * input_total);
 		
 		else if (strcmp(input_command, "!ls")==0 || strcmp(input_command, "!LS")==0){
 		//if the command is "!ls . . ."
-			DIR *d;
-			struct dirent *dir;
-			d = opendir(".");
-			if (d){
-				while((dir = readdir(d)) != NULL){
-					printf("%s\n", dir->d_name);
-				}
-				closedir(d);
-			}
+			// DIR *d;
+			// struct dirent *dir;
+			// d = opendir(".");
+			// if (d){
+			// 	while((dir = readdir(d)) != NULL){
+			// 		printf("%s\n", dir->d_name);
+			// 	}
+			// 	closedir(d);
+			// }
 			//1 . call system (command) locally
+			char buff[MAX_LENGTH];
+			strcpy(buff,"ls ");
+			strcat(buff,input_parameters);
+			system(buff);
 		}
 
 		else if (strcmp(input_command, "!pwd")==0 || strcmp(input_command, "!PWD")==0){
