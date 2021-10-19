@@ -356,6 +356,13 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			int check=finder_fd(client_fd,clients);
 			if(check>=0 && strcmp(clients[check].pass,para)==0)
 			{	
+				if(clients[check].is_logged==1)
+				{
+					strcpy(msgx,"User logged in through another client");
+					send(client_fd,msgx,sizeof(msgx),0);
+					auth[client_fd]=0;
+					return 0;
+				}
 				strcpy(msgx,"Authentication Complete");
 				auth[client_fd]=2;
 				clients[check].is_logged=1;
