@@ -95,3 +95,14 @@ Possible issues:
 1. errors might arise when we attempt to get a file from a location when it is in the process of beign put there.
 2. when a client closes their program using an interrupt like ctrl+C, the server does not realise the program is over so it does not disconnect that client nor does it deauthorize the client's username and password.
 3. the server is not able to transmit files containing spaces or characters in languages with non-English characters(e.g. Arabic, Chinese, Japanese). This may be due to error when encoding and parsing the incoming command. 
+
+More testcase:
+user user
+pass user
+cd ..
+ls
+put poster.pdf
+get chocolate.txt
+!pwd
+!cd ..
+quit
