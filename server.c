@@ -32,7 +32,7 @@ struct arg_struct{
 int finderu(char* u,struct Client clients[100]);
 int finderp(char* p,struct Client clients[100]);
 int finder_fd(int fd, struct Client clients[100]);
-int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100]);
+int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100],char basepath[100]);
 void* get_client(void* arguments);
 void* put_client(void* arguments);
 
@@ -42,18 +42,20 @@ void* put_client(void* arguments);
 int main(int argc, char** argv)
 
 {
-
+	char basepath[MAX_PATH];
+	getcwd(basepath,MAX_PATH);
 	//array to keep a check on if a given file descrptor has been authorized
 	int clients_auth[1000];
 	//to store a user's data
 	struct Client clients[100];
+
 	//initialising all authorized users
+
 	clients[0].users="user";
 	clients[0].pass="user";
 	clients[0].is_logged=0;
 	clients[0].fd=0;
 	getcwd(clients[0].current_path,MAX_PATH);
-	printf("%s \n",clients[0].current_path);
 
 	for(int i=0;i<1000;i++)
 		clients_auth[i]=0;
@@ -66,6 +68,11 @@ int main(int argc, char** argv)
 		clients[i].fd=0;
 		getcwd(clients[i].current_path,MAX_PATH);
 	}
+	clients[1].users="sneheel";
+	clients[1].pass="1234";
+
+	clients[2].users="xinyao";
+	clients[2].pass="1234";
 
 	//takes in ip address and port if they are given
 	int see=1;
@@ -199,7 +206,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					if(serve_client(fd,file_transfer_fd,clients_auth,clients)==-1)
+					if(serve_client(fd,file_transfer_fd,clients_auth,clients,basepath)==-1)
 					{
 						FD_CLR(fd,&full_fdset);
 						if(max_fd==fd)
@@ -265,7 +272,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100])
+int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client clients[100], char basepath[MAX_PATH])
 {
 	char message[100];
 	char msgx[100];
@@ -281,7 +288,11 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			printf("Client disconnected \n");
 			int find = finder_fd(client_fd,clients);
 			if (find>=0)
+			{
 				clients[find].is_logged=0;
+				strcpy(clients[find].current_path,basepath);
+			}
+			auth[client_fd]=0;
 			close(client_fd);
 			return -1;
 		}
