@@ -96,11 +96,8 @@ int main(int argc, char** argv)
 		//if the command is "put a existed file"
 			send(srv_socket, input_total, MAX_LENGTH,0);
 			//0 . send the command to the server
-			int src = open(input_parameters, O_RDONLY);
+			FILE* fptr = fopen(input_parameters,"r");
 			//1 . open the file
-			if (src<0){
-				printf("Error occurs when open file: %s\n", input_parameters);
-			}
 			//2 . read the file
 			if(connect(file_socket,(struct sockaddr*)&file_transfer_address,sizeof(file_transfer_address))<0)
 			{
@@ -108,33 +105,27 @@ int main(int argc, char** argv)
 				return 0;
 			}
 			//3 . open a new TCP connection to server
-			send(file_socket,"Hello",sizeof("Hello"),0);
-			printf("Hello sent");
-			struct stat st;
-			stat(input_parameters, &st);
-			int filesize = st.st_size;
-			//get the size of the file for sendfile()
-			int sentsize = sendfile(file_socket, src, NULL, filesize);
-			//error check:
-			if (sentsize <= 0) {
-				printf("ERROR: the file was not sent\n");
-			}
-				//(1) sentsize invalid, the file is not sent
-			else if (sentsize < filesize){
-				printf("WARNING: the file was not fully sent; there might be data missing\n");
-			}
-				//(2) the file is not fully sent
-			else if (sentsize > filesize){
-				printf("WARNING: the data sent was larger than the original file; there might be a mistake\n");
-			}   //(3) the file is larger than original; there might be a mistake in between. 
-			else {
-				printf("Success! The file was sent. \n");
-			}
+			int bytes=0;
+			char buffer[1500];
+			do
+			{
+				int i;
+				for(i=0; i<1500; i++)
+				{
+					char ch = fgetc(fptr);
+					if(feof(fptr)) break;
+					buffer[i] = ch;
+				}
+				bytes+=i;
+				send(file_socket,buffer,i,0);
+			}while(!feof(fptr));
+
+			printf("Bytes sent %d \n",bytes);
 			//4 . write the file to server
 
 			//we use the function of ssize sendfile(int out_fd, int in_fd, off_t * offset, size_t count)
 			//sendfile return: size of the file sent
-			close(src);
+			fclose(fptr);
 			//5 . close the file
 			close(file_socket);
 			//6 . close the TCP connection
