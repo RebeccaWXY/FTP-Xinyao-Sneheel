@@ -438,8 +438,6 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 
 				int client_sd = accept(file_transfer_fd,NULL,NULL);
 				printf("%d \n",client_sd);
-				recv(client_sd,msgx,sizeof(msgx),0);
-					printf("%s Yo \n",msgx);
 				if(client_sd<0)
 				{
 					perror("accept ");
@@ -518,7 +516,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 		else
 		{
 			strcpy(msgx,"Invalid Command");
-			printf("%s \n",comm);
+			//printf("%s \n",comm);
 			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		return 0;
@@ -579,9 +577,10 @@ void* put_client(void* arguments)
 		bytes = recv(client_sd,buffer,sizeof(buffer),0);
 		if(bytes>0)
 			fwrite(buffer,bytes,1,fptr);
+
 	}while(bytes>0);
 	// fputs(buffer,fptr);
-	printf("Bytes received %d \n",bytes);
+	// printf("Bytes received %d \n",bytes);
 	fclose(fptr);
 	close(client_sd);
 	free(args);
