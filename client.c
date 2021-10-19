@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 
 {
 	int srv_socket = socket(AF_INET,SOCK_STREAM,0);	
-	int file_socket = socket(AF_INET, SOCK_STREAM,0);
+	int file_socket;
 
 	//sd=socket(AF_INET, SOCK_STREAM, 0)
 	char* ip_addr;
@@ -50,19 +50,12 @@ int main(int argc, char** argv)
 		server_address.sin_family = AF_INET;
 		server_address.sin_port = htons(port);
 		inet_aton(ip_addr, &server_address.sin_addr);
-		bzero(&file_transfer_address,sizeof(file_transfer_address));
-		file_transfer_address.sin_family = AF_INET;
-		file_transfer_address.sin_port = htons(5500);
-		inet_aton(ip_addr, &file_transfer_address.sin_addr);
+	
 	} else if (see==1){
 		bzero(&server_address,sizeof(server_address));
 		server_address.sin_family = AF_INET;
 		server_address.sin_port = htons(5000);
-		server_address.sin_addr.s_addr = htonl(INADDR_ANY);	
-		bzero(&file_transfer_address,sizeof(file_transfer_address));
-		file_transfer_address.sin_family = AF_INET;
-		file_transfer_address.sin_port = htons(5500);
-		file_transfer_address.sin_addr.s_addr = htonl(INADDR_ANY);		
+		server_address.sin_addr.s_addr = htonl(INADDR_ANY);		
 	}
 
 	if(connect(srv_socket,(struct sockaddr*)&server_address,sizeof(server_address))<0)
@@ -99,6 +92,13 @@ int main(int argc, char** argv)
 			FILE* fptr = fopen(input_parameters,"r");
 			//1 . open the file
 			//2 . read the file
+
+			file_socket = socket(AF_INET, SOCK_STREAM,0);
+			bzero(&file_transfer_address,sizeof(file_transfer_address));
+			file_transfer_address.sin_family = AF_INET;
+			file_transfer_address.sin_port = htons(5500);
+			file_transfer_address.sin_addr.s_addr=server_address.sin_addr.s_addr;
+
 			if(connect(file_socket,(struct sockaddr*)&file_transfer_address,sizeof(file_transfer_address))<0)
 			{
 				perror("connect error before sending file");
@@ -139,6 +139,12 @@ int main(int argc, char** argv)
 			if (strcmp(buffer,"existed")==0){
 			//3 . if existed
 				printf("situation 1: exists\n");
+				file_socket = socket(AF_INET, SOCK_STREAM,0);
+				bzero(&file_transfer_address,sizeof(file_transfer_address));
+				file_transfer_address.sin_family = AF_INET;
+				file_transfer_address.sin_port = htons(5500);
+				file_transfer_address.sin_addr.s_addr=server_address.sin_addr.s_addr;
+				
 				if(connect(file_socket,(struct sockaddr*) &file_transfer_address,sizeof(file_transfer_address))==-1)
 				{
 					perror("Connect: ");
