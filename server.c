@@ -260,6 +260,7 @@ int main(int argc, char** argv)
 
 	//6. close());
 	close(server_fd);
+	close(file_transfer_fd);
 
 	return 0;
 }
@@ -376,6 +377,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 		bzero(&comm,sizeof(comm));
 		bzero(&para,sizeof(para));
 		sscanf(message,"%s %s", comm , para);
+		printf("%s \n",message);
 
 		//cases
 		if(strcmp(comm,"user")==0)
@@ -513,10 +515,13 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			return 0;
 
 		}
+		else if(strcmp(message,"")==0)
+			return 0;
 		else
 		{
 			strcpy(msgx,"Invalid Command");
 			//printf("%s \n",comm);
+			printf("%s \n",message);
 			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		return 0;
@@ -534,6 +539,7 @@ int finderu(char* u,struct Client clients[100])
 	return -1;
 }
 
+//multithreaded funciton for get
 void* get_client(void* arguments)
 {
 	char buffer[1500];
@@ -558,11 +564,15 @@ void* get_client(void* arguments)
 		printf("Bytes sent %d \n",bytes);
 		fclose(fptr);
 	}
+	// recv(client_sd,buffer,sizeof(buffer),0);
+	// printf("%s \n",buffer);
 	close(client_sd);
 	free(args);
 	pthread_exit(NULL);
 
 }
+
+//multithreaded function for put
 
 void* put_client(void* arguments)
 {
