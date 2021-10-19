@@ -6,7 +6,7 @@ Use the makefile to build two separate packs FTPServer and FTPClient.
 
 File explantions: 
 1. client.c:
-Code on the client side. 
+Code on the client side. It takes in two arguments, ip_addr and port, to create socket for communications between server and client, and for file transferral between the two. After processing the basic information, it will enter an infinite loop until the user chooses to leave, typing in "quit".  
 
 Server works primarily according to the pseudocode given, with message_exchange() separated as a function. 
 GET: after exchanging messages with server, start a new TCP connection to server and close the connection after receiving all bytes and writing them into buffer. 
