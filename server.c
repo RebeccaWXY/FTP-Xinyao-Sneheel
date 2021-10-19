@@ -26,7 +26,7 @@ struct Client{
 
 struct arg_struct{
 	int ffd;
-	char *fname;
+	char fname[200];
 };
 
 int finderu(char* u,struct Client clients[100]);
@@ -382,11 +382,13 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 		{
 			strcpy(msgx,"User has already logged in");
 			send(client_fd,msgx,sizeof(msgx),0);
+			return 0;
 		}
 		else if (strcmp(comm,"pass")==0)
 		{
 			strcpy(msgx,"User has already logged in");
 			send(client_fd,msgx,sizeof(msgx),0);
+			return 0;
 		}
 		else if (strcmp(comm,"get")==0 || strcmp(comm,"GET")==0)
 		{
@@ -404,19 +406,18 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 				send(client_fd,msgx,sizeof(msgx),0);
 				fclose(fptr);
 				int client_sd = accept(file_transfer_fd,NULL,NULL);
+				printf("1");
 				if(client_sd<0)
 				{
 					perror("accept ");
-					fclose(fptr);
 				}
 				else
 				{
-					fclose(fptr);
-					struct arg_struct args;
-					args.ffd=client_sd;
-					strcpy(args.fname,para);
+					struct arg_struct *args = malloc(sizeof(struct arg_struct));
+					args->ffd=client_sd;
+					strcpy(args->fname,para);
 					pthread_t thread_id;
-					pthread_create(&thread_id,NULL,get_client,&args);
+					pthread_create(&thread_id,NULL,get_client,(void*)args);
 				}
 			}
 			return 0;
@@ -436,20 +437,20 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 				//code to enable file transfer
 
 				int client_sd = accept(file_transfer_fd,NULL,NULL);
-				printf("%d",client_sd);
+				printf("%d \n",client_sd);
+				recv(client_sd,msgx,sizeof(msgx),0);
+					printf("%s Yo \n",msgx);
 				if(client_sd<0)
 				{
 					perror("accept ");
 				}
 				else
 				{
-					recv(client_sd,msgx,sizeof(msgx),0);
-					printf("%s Yo",msgx);
-					struct arg_struct args;
-					args.ffd=client_sd;
-					strcpy(args.fname,para);
+					struct arg_struct *args = malloc(sizeof(struct arg_struct));
+					args->ffd=client_sd;
+					strcpy(args->fname,para);
 					pthread_t thread_id;
-					pthread_create(&thread_id,NULL,put_client,&args);
+					pthread_create(&thread_id,NULL,put_client,(void*)args);
 				}
 			}
 
@@ -517,6 +518,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 		else
 		{
 			strcpy(msgx,"Invalid Command");
+			printf("%s \n",comm);
 			send(client_fd,msgx,sizeof(msgx),0);
 		}
 		return 0;
@@ -538,44 +540,52 @@ void* get_client(void* arguments)
 {
 	char buffer[1500];
 	int bytes=0;
-	struct arg_struct args = *(struct arg_struct*)arguments;
-	int client_sd= args.ffd;
-	FILE* fptr = fopen(args.fname,"w");
-	do
-	{
-		int i;
-		for(i=0; i<1500; i++)
+	struct arg_struct *args = (struct arg_struct*)arguments;
+	int client_sd = args->ffd;
+	char* filename = args->fname;
+	FILE* fptr = fopen(filename,"r");
+	if (fptr!=NULL)
+	{	do
 		{
-			char ch = fgetc(fptr);
-			if(feof(fptr)) break;
-			buffer[i] = ch;
-		}
-		bytes+=i;
-		send(client_sd,buffer,i,0);
-	}while(!feof(fptr));
-	printf("Bytes sent %d \n",bytes);
+			int i;
+			for(i=0; i<1500; i++)
+			{
+				char ch = fgetc(fptr);
+				if(feof(fptr)) break;
+				buffer[i] = ch;
+			}
+			bytes+=i;
+			send(client_sd,buffer,i,0);
+		}while(!feof(fptr));
+		printf("Bytes sent %d \n",bytes);
+		fclose(fptr);
+	}
 	close(client_sd);
-	fclose(fptr);
+	free(args);
+	pthread_exit(NULL);
+
 }
 
 void* put_client(void* arguments)
 {
 	char buffer[1500];
 	int bytes;
-	struct arg_struct args = *(struct arg_struct*)arguments;
-	int client_sd= args.ffd;
-	FILE* fptr = fopen(args.fname,"w");
-	bytes = recv(client_sd,buffer,sizeof(buffer),0);
-	// do
-	// {
-	// 	bytes = recv(client_sd,buffer,sizeof(buffer),0);
-	// 	if(bytes>0)
-	// 		fwrite(buffer,bytes,1,fptr);
-	// }while(bytes>0);
-	fputs(buffer,fptr);
+	struct arg_struct *args = (struct arg_struct*)arguments;
+	int client_sd= args->ffd;
+	FILE* fptr = fopen(args->fname,"w");
+	//bytes = recv(client_sd,buffer,sizeof(buffer),0);
+	do
+	{
+		bytes = recv(client_sd,buffer,sizeof(buffer),0);
+		if(bytes>0)
+			fwrite(buffer,bytes,1,fptr);
+	}while(bytes>0);
+	// fputs(buffer,fptr);
 	printf("Bytes received %d \n",bytes);
-	close(client_sd);
 	fclose(fptr);
+	close(client_sd);
+	free(args);
+	pthread_exit(NULL);
 }
 //finds password if it exists
 int finderp(char* p,struct Client clients[100])
