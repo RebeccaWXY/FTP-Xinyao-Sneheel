@@ -17,6 +17,8 @@
 
 int message_exchange(int srv_socket, char * buffer, char * input_total);
 
+int main(int argc, char** argv)
+
 {
 	int srv_socket = socket(AF_INET,SOCK_STREAM,0);	
 	int file_socket = socket(AF_INET, SOCK_STREAM,0);
@@ -74,6 +76,10 @@ int message_exchange(int srv_socket, char * buffer, char * input_total);
 	//While ( 1 ) {
 		printf("ftp>");
 		//show ftp>
+		//clear out input_command, and para
+		strcpy(input_command,"");
+		strcpy(input_parameters,"");
+
 		memset(input_total, 0, MAX_LENGTH);
 		fgets(input_total, MAX_LENGTH, stdin);
 		//fgets a ftp command line from keyboard
