@@ -37,6 +37,8 @@ Server works primarily according to the pseudocode given.
 
 Server uses a structure called Client to store data abotu an individual client, and also uses an array to check if a particular client has finished the authentication prcess or not.
 
+Multithreading is employed in the get and put methods, so a new thread is created everytime they are called. this mechanism is in place so as to not block other clients from transferring files.
+
 GET: In the GET method, the server accepts a connection to the new socket, and then serves to the client connected to that socket. The server first receives the name of the file whcih needs to be transferred from the server to the client. 
 
 PUT: In the PUT method, the server accepts a connection to the new socket, and then serves to the client connected to that socket. The server first receives the name of the file whcih needs to be transferred from the client to the server. Then we open a new file to write, and copy data 1500 bytes at a time from the stream to the file. The loop breaks when the number of bytes transferred is 0, ie. all data has been transferred.
