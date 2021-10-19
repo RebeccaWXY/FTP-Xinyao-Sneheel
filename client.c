@@ -9,13 +9,18 @@
 #include<fcntl.h>
 #include<dirent.h>
 
+#include<sys/sendfile.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+
 #define MAX_LENGTH 200
 
 int message_exchange(int srv_socket, char * buffer, char * input_total);
 
-int main(int argc, char** argv)
 {
 	int srv_socket = socket(AF_INET,SOCK_STREAM,0);	
+	int file_socket = socket(AF_INET, SOCK_STREAM,0);
+
 	//sd=socket(AF_INET, SOCK_STREAM, 0)
 	char* ip_addr;
 	int port;
@@ -42,14 +47,21 @@ int main(int argc, char** argv)
 		bzero(&server_address,sizeof(server_address));
 		server_address.sin_family = AF_INET;
 		server_address.sin_port = htons(port);
-		server_address.sin_addr.s_addr = htonl(ip_addr);
+		inet_aton(ip_addr, &server_address.sin_addr);
+		bzero(&file_transfer_address,sizeof(file_transfer_address));
+		file_transfer_address.sin_family = AF_INET;
+		file_transfer_address.sin_port = htons(port);
+		inet_aton(ip_addr, &file_transfer_address.sin_addr);
 	} else if (see==1){
 		bzero(&server_address,sizeof(server_address));
 		server_address.sin_family = AF_INET;
 		server_address.sin_port = htons(5000);
-		server_address.sin_addr.s_addr = htonl(INADDR_ANY);		
+		server_address.sin_addr.s_addr = htonl(INADDR_ANY);	
+		bzero(&file_transfer_address,sizeof(file_transfer_address));
+		file_transfer_address.sin_family = AF_INET;
+		file_transfer_address.sin_port = htons(5000);
+		file_transfer_address.sin_addr.s_addr = htonl(INADDR_ANY);		
 	}
-
 
 	if(connect(srv_socket,(struct sockaddr*)&server_address,sizeof(server_address))<0)
 	{
@@ -84,14 +96,41 @@ int main(int argc, char** argv)
 				printf("Error occurs when open file: %s\n", input_parameters);
 			}
 			//2 . read the file
-	
+			if(connect(file_socket,(struct sockaddr*)&file_transfer_address,sizeof(file_transfer_address))<0)
+			{
+				perror("connect error before sending file");
+				return 0;
+			}
 			//3 . open a new TCP connection to server
-	
-			//3 . write the file to server
-	
-			//4 . close the file
-	
-			//5 . close the TCP connection
+
+			struct stat st;
+			stat(input_parameters, &st);
+			int filesize = st.st_size;
+			//get the size of the file for sendfile()
+			int sentsize = sendfile(file_socket, src, NULL, filesize);
+			//error check:
+			if (sentsize <= 0) {
+				printf("ERROR: the file was not sent\n");
+			}
+				//(1) sentsize invalid, the file is not sent
+			else if (sentsize < filesize){
+				printf("WARNING: the file was not fully sent; there might be data missing\n");
+			}
+				//(2) the file is not fully sent
+			else if (sentsize > filesize){
+				printf("WARNING: the data sent was larger than the original file; there might be a mistake\n");
+			}   //(3) the file is larger than original; there might be a mistake in between. 
+			else {
+				printf("Success! The file was sent. \n");
+			}
+			//4 . write the file to server
+
+			//we use the function of ssize sendfile(int out_fd, int in_fd, off_t * offset, size_t count)
+			//sendfile return: size of the file sent
+			close(src);
+			//5 . close the file
+			close(file_socket);
+			//6 . close the TCP connection
 		}
 
 		/*
@@ -216,5 +255,3 @@ int message_exchange(int srv_socket, char * buffer, char * input_total){
 	//1 . fgets a reply line from the socket to see if the command
 			//is successfully executed and display it to the user
 }
-
-
