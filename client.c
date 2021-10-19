@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 			char new_dir[200];
 			strcpy(new_dir,input_parameters);
 			int f;
-			if (argc<3){
+			if (strcmp(input_parameters, "") ==0){
 				f = chdir("..");
 			} else {
 				f = chdir(new_dir);
