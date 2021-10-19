@@ -8,7 +8,7 @@ File explantions:
 1. client.c:
 Code on the client side. It takes in two arguments, ip_addr and port, to create socket for communications between server and client, and for file transferral between the two. After processing the basic information, it will enter an infinite loop until the user chooses to leave, typing in "quit".  
 
-Server works primarily according to the pseudocode given, with message_exchange() separated as a function. 
+Client works primarily according to the pseudocode given, with message_exchange() separated as a function. 
 GET: after exchanging messages with server, start a new TCP connection to server and close the connection after receiving all bytes and writing them into buffer. 
 
 PUT: after sending the request to put file, start a new ICP connection to server and close the connection after sending all bytes to server. 
@@ -43,3 +43,5 @@ ls: calls the popen function which writes the results of the system call to the 
 pwd:copies working directory from the client structure.
 
 cd:	changes working director using the chddir call.
+
+!ls, !pwd, !cd are operated only in client locally and does not involve server. 
