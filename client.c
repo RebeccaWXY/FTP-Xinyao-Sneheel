@@ -77,8 +77,8 @@ int main(int argc, char** argv)
 		fgets(input_total, MAX_LENGTH, stdin);
 		//fgets a ftp command line from keyboard
 		sscanf(input_total, "%s %s", input_command, input_parameters);
-		printf("input_command:%s\n", input_command);
-		printf("input_parameters:%s\n", input_parameters);
+		// printf("input_command:%s\n", input_command);
+		// printf("input_parameters:%s\n", input_parameters);
 
 		if (strcmp(input_command, "user")==0 || strcmp(input_command, "pass")==0){
 		//if the command is "user username”/"pass password"
@@ -240,6 +240,7 @@ int main(int argc, char** argv)
 			if(f==0)
 			{
 				printf("successfully changed\n");
+				getcwd(new_dir,200);
 				printf("current directory: %s\n", new_dir);
 			} 
 			else

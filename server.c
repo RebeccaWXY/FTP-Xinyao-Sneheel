@@ -395,7 +395,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 		bzero(&comm,sizeof(comm));
 		bzero(&para,sizeof(para));
 		sscanf(message,"%s %s", comm , para);
-		printf("%s \n",message);
+		//printf("%s \n",message);
 
 		//cases
 		if(strcmp(comm,"user")==0)
@@ -426,7 +426,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 				send(client_fd,msgx,sizeof(msgx),0);
 				fclose(fptr);
 				int client_sd = accept(file_transfer_fd,NULL,NULL);
-				printf("1");
+				// printf("1");
 				if(client_sd<0)
 				{
 					perror("accept ");
@@ -457,7 +457,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 				//code to enable file transfer
 
 				int client_sd = accept(file_transfer_fd,NULL,NULL);
-				printf("%d \n",client_sd);
+				// printf("%d \n",client_sd);
 				if(client_sd<0)
 				{
 					perror("accept ");
@@ -493,7 +493,7 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 				while(fgets(path, 1024, fp) != NULL)
 				{
 					send(client_fd,path,1024,0);
-					printf("%s", path);
+					// printf("%s", path);
 					// bzero(&path,sizeof(path));
 				}	
 
