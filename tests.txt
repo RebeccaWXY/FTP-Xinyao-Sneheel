@@ -1,8 +1,11 @@
-TESTS:
 
-ls: 
+Issues solved throughout the process:
 
-cd:
+GET,PUT
+
+ls: Initially, due to miscommunication, we had 
+
+cd: The code for cd on the client
 
 pwd:
 
@@ -17,3 +20,16 @@ Authorization (Errors in checkpoitn 1):
 In our first checkpoint, we had a single auth variable. This meant that once one user had logged in, the other users wouldn't need to login because the variable would already be set to logged in.
 
 We realize this fact very early in testing after we started working for our final submission, and changed it immediately.
+
+
+Test Environment:
+
+In order to test our code as robustly as possible, in the virtual machine we created the followign test environment:
+
+Client location: /Documents/Client
+
+Server location: /Desktop/FTP
+
+Files were placed in different file directories across the system to check for navigation errors and file transfer errors.
+
+
