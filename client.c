@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 		inet_aton(ip_addr, &server_address.sin_addr);
 		bzero(&file_transfer_address,sizeof(file_transfer_address));
 		file_transfer_address.sin_family = AF_INET;
-		file_transfer_address.sin_port = htons(port);
+		file_transfer_address.sin_port = htons(5500);
 		inet_aton(ip_addr, &file_transfer_address.sin_addr);
 	} else if (see==1){
 		bzero(&server_address,sizeof(server_address));
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 		server_address.sin_addr.s_addr = htonl(INADDR_ANY);	
 		bzero(&file_transfer_address,sizeof(file_transfer_address));
 		file_transfer_address.sin_family = AF_INET;
-		file_transfer_address.sin_port = htons(5000);
+		file_transfer_address.sin_port = htons(5500);
 		file_transfer_address.sin_addr.s_addr = htonl(INADDR_ANY);		
 	}
 
@@ -108,7 +108,8 @@ int main(int argc, char** argv)
 				return 0;
 			}
 			//3 . open a new TCP connection to server
-
+			send(file_socket,"Hello",sizeof("Hello"),0);
+			printf("Hello sent");
 			struct stat st;
 			stat(input_parameters, &st);
 			int filesize = st.st_size;

@@ -156,6 +156,12 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	if(listen(file_transfer_fd,5)<0)
+	{
+		perror("Listen Error:");
+		return -1;
+	}
+
 	//select variables for main connection
 	fd_set full_fdset,ready_fdset;
 	FD_ZERO(&full_fdset);
@@ -428,13 +434,17 @@ int serve_client(int client_fd, int file_transfer_fd, int *auth, struct Client c
 			{	
 				fclose(fptr);
 				//code to enable file transfer
+
 				int client_sd = accept(file_transfer_fd,NULL,NULL);
+				printf("%d",client_sd);
 				if(client_sd<0)
 				{
 					perror("accept ");
 				}
 				else
 				{
+					recv(client_sd,msgx,sizeof(msgx),0);
+					printf("%s Yo",msgx);
 					struct arg_struct args;
 					args.ffd=client_sd;
 					strcpy(args.fname,para);
@@ -555,12 +565,14 @@ void* put_client(void* arguments)
 	struct arg_struct args = *(struct arg_struct*)arguments;
 	int client_sd= args.ffd;
 	FILE* fptr = fopen(args.fname,"w");
-	do
-	{
-		bytes = recv(client_sd,buffer,sizeof(buffer),0);
-		if(bytes>0)
-			fwrite(buffer,bytes,1,fptr);
-	}while(bytes>0);
+	bytes = recv(client_sd,buffer,sizeof(buffer),0);
+	// do
+	// {
+	// 	bytes = recv(client_sd,buffer,sizeof(buffer),0);
+	// 	if(bytes>0)
+	// 		fwrite(buffer,bytes,1,fptr);
+	// }while(bytes>0);
+	fputs(buffer,fptr);
 	printf("Bytes received %d \n",bytes);
 	close(client_sd);
 	fclose(fptr);
