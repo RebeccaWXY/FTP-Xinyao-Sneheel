@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		bzero(&server_address,sizeof(server_address));
 		server_address.sin_family = AF_INET;
 		server_address.sin_port = htons(port);
-		server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+		server_address.sin_addr.s_addr = htonl(ip_addr);
 	} else if (see==1){
 		bzero(&server_address,sizeof(server_address));
 		server_address.sin_family = AF_INET;
