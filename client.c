@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 				file_transfer_address.sin_family = AF_INET;
 				file_transfer_address.sin_port = htons(5500);
 				file_transfer_address.sin_addr.s_addr=server_address.sin_addr.s_addr;
-				
+
 				if(connect(file_socket,(struct sockaddr*) &file_transfer_address,sizeof(file_transfer_address))==-1)
 				{
 					perror("Connect: ");
@@ -252,6 +252,7 @@ int main(int argc, char** argv)
 		
 		else if (strcmp(input_command, "quit")==0){
 		//if the command is "quit"
+			send(srv_socket,input_command,sizeof(input_command),0);
 			close(srv_socket);
 			//1 . close the socket
 			break;
