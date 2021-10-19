@@ -11,6 +11,7 @@
 
 #define MAX_LENGTH 200
 
+int message_exchange(int srv_socket, char * buffer, char * input_total);
 
 int main(int argc, char** argv)
 {
@@ -58,36 +59,19 @@ int main(int argc, char** argv)
 	//connect(sd, &server −socket−address, . . . )
 
 	while (1){
-		strcpy(input_command,"");
-		strcpy(input_parameters,"");
 	//While ( 1 ) {
 		printf("ftp>");
 		//show ftp>
-
+		memset(input_total, 0, MAX_LENGTH);
 		fgets(input_total, MAX_LENGTH, stdin);
 		//fgets a ftp command line from keyboard
 		sscanf(input_total, "%s %s", input_command, input_parameters);
 		printf("input_command:%s\n", input_command);
 		printf("input_parameters:%s\n", input_parameters);
 
-		if (strcmp(input_command, "user")==0){
-		//if the command is "user username ”
-			send(srv_socket, input_total, MAX_LENGTH,0);
-			//0. send the command to the server
-		    valread = read(srv_socket, buffer, 1024);
-		    printf("%s\n", buffer);
-			//1. fgets a reply line from the socket to see if the command
-			//is successfully executed and display it to the user
-		}
-		
-		else if (strcmp(input_command, "pass")==0){
-		//if the command is "pass password"
-			send(srv_socket, input_total, MAX_LENGTH,0);
-			//0 . send the command to the server
-		    valread = read(srv_socket, buffer, 1024);
-		    printf("%s\n", buffer);	
-			//1 . fgets a reply line from the socket to see if the command
-			//is successfully executed and display it to the user
+		if (strcmp(input_command, "user")==0 || strcmp(input_command, "pass")==0){
+		//if the command is "user username”/"pass password"
+			message_exchange(srv_socket, buffer, input_total);
 		}
 		
 		else if (strcmp(input_command, "put")==0){
@@ -131,26 +115,9 @@ int main(int argc, char** argv)
 			//4 . if non−existed display "file name : no such file on server"
 		}
 		*/
-
-		
-		else if (strcmp(input_command, "cd")==0 ||strcmp(input_command, "pwd")==0){
-		//if the command is "cd . . . ", "ls . . .", or "pwd"
-			send(srv_socket, input_total, MAX_LENGTH,0);
-			//1 . send the command to the server
-		    valread = read(srv_socket, buffer, 1024);
-			//2 . fgets a reply line from the socket to see if the command is successfully executed
-		    printf("%s\n", buffer);		
-			//3 . read from the socket and display correspondingly.
-		}
-		
 		else if (strcmp(input_command, "ls")==0)
 		{
-			send(srv_socket, input_total, MAX_LENGTH,0);
-			//1 . send the command to the server
-		    valread = read(srv_socket, buffer, 1024);
-			//2 . fgets a reply line from the socket to see if the command is successfully executed
-		    printf("%s\n", buffer);		
-			//3 . read from the socket and display correspondingly.
+			message_exchange(srv_socket, buffer, input_total);
 		    bzero(&buffer,sizeof(buffer));
 			do
 			{
@@ -162,25 +129,28 @@ int main(int argc, char** argv)
 			}while(valread!=0);
 		}
 
-		else if (strcmp(input_command, "!ls")==0){
+		
+		else if (strcmp(input_command, "cd")==0 || strcmp(input_command, "pwd")==0){
+		//if the command is "cd . . . ", "ls . . .", or "pwd"
+			message_exchange(srv_socket, buffer, input_total);
+		}
+		
+		
+		else if (strcmp(input_command, "!ls")==0 || strcmp(input_command, "!LS")==0){
 		//if the command is "!ls . . ."
-			// DIR *d;
-			// struct dirent *dir;
-			// d = opendir(".");
-			// if (d){
-			// 	while((dir = readdir(d)) != NULL){
-			// 		printf("%s\n", dir->d_name);
-			// 	}
-			// 	closedir(d);
-			// }
+			DIR *d;
+			struct dirent *dir;
+			d = opendir(".");
+			if (d){
+				while((dir = readdir(d)) != NULL){
+					printf("%s\n", dir->d_name);
+				}
+				closedir(d);
+			}
 			//1 . call system (command) locally
-			char buff[MAX_LENGTH];
-			strcpy(buff,"ls ");
-			strcat(buff,input_parameters);
-			system(buff);
 		}
 
-		else if (strcmp(input_command, "!pwd")==0){
+		else if (strcmp(input_command, "!pwd")==0 || strcmp(input_command, "!PWD")==0){
 		//if the command is "!pwd"-]
 			char cwd_client[200];
 			if (getcwd(cwd_client, sizeof(cwd_client)) != NULL){
@@ -196,7 +166,7 @@ int main(int argc, char** argv)
 			char new_dir[200];
 			strcpy(new_dir,input_parameters);
 			int f;
-			if (strcmp(input_parameters,"")==0){
+			if (argc<3){
 				f = chdir("..");
 			} else {
 				f = chdir(new_dir);
@@ -228,6 +198,23 @@ int main(int argc, char** argv)
 
 	}
 	return 0;
+}
+
+int message_exchange(int srv_socket, char * buffer, char * input_total){
+	memset(buffer,0,1024); //fill buffer with \0
+	if(send(srv_socket, input_total, MAX_LENGTH,0) < 0)
+		perror("ERROR: failure during sending message to server.\n");//write the whole command to socket- very similar to send
+	//0. send the command to the server
+
+	int valread = read(srv_socket, buffer, 1024);
+	//printf("valread: %d\n", valread);
+	if ( valread < 0 ) {
+		close(srv_socket);
+		perror("ERROR: failure during receiving message from server\n");
+	}
+		printf("%s\n",buffer);
+	//1 . fgets a reply line from the socket to see if the command
+			//is successfully executed and display it to the user
 }
 
 
