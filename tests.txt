@@ -33,3 +33,7 @@ Server location: /Desktop/FTP
 Files were placed in different file directories across the system to check for navigation errors and file transfer errors.
 
 
+Testcase1: 1 client, transferring audio file(.mp3)
+Result: Both put and get command works. However, it is noticeable that filenames cannot contain spaces or characters of other languages(e.g. Arabic, Chinese and Japanese).
+Testcase2: 1 client, transferring video file(.mp4)
+Result: Both get and put command works. 
