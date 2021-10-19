@@ -6,7 +6,7 @@ GET,PUT:
 GET, and PUT had several errors which although minor took us a lot of time to solve.
 Initially we tried using the sendfile() method, but thought against it for reasons of simplicity. For a long time, the code threw up segmentation erros and we couldn't figure out the reason, but it ended up being due to a bad file open operation which I had not checked for earlier.
 
-Initialization of TCP server on client side: Earlier we did not pay attention to the fact that once we finish one file transfer operation and close the server, we would need to reinitialize it using socket(). this would give us errors. We fixed this in one of the later commits.
+Initialization of TCP server on client side: Earlier we did not pay attention to the fact that once we finish one file transfer operation and close the server, we would need to reinitialize it using socket(). This would give us errors. We fixed this in one of the later commits.
 
 ls: Initially, due to miscommunication, we had not thought of how ls will be sending information through send() multiple times and only used recv once.
 
@@ -41,12 +41,49 @@ Files were placed in different file directories across the system to check for n
 
 
 Testcase1: 1 client, transferring audio file(.mp3)
-Result: Both put and get command works. However, it is noticeable that filenames cannot contain spaces or characters of other languages(e.g. Arabic, Chinese and Japanese).
+user user
+pass user
+ls 
+!ls
+put audio1.mp3
+ls
+get audio2.mp3
+ls
+get audio 3.mp3
+ls
+Result: Both put and get command works. However, it is noticeable that filenames cannot contain spaces.
+
 
 Testcase2: 1 client, transferring video file(.mp4)
-Result: Both get and put command works. 
+user user
+pass user
+ls 
+!ls
+put movie10.mp4
+ls
+get movie_99.mp4
+ls
+get 影片02.mp4
+ls
+
+Result: Both get and put command works.  However, characters of other languages(e.g. Arabic, Chinese and Japanese) would not be identified and would not work on our end. 
 
 Testcase3: 2 clients can simultaneously transfer any types of files between any location in the machine. this shows us that multithreading is working since neither get or put are blocked even when a large file(423 mb, mp4 video) is being transferred.
+
+/*client 1 side*/
+user user
+pass user
+ls
+!ls
+put long_vid03.mp4
+ls
+/*client 2 side*/
+user USER1
+pass USER1
+ls
+!ls
+put long_vid01.mp4
+ls
 
 Testcase4: Multiple client authorization: we have put provisions for a few differet test cases here:
 1. When two clients enter the same username:
@@ -57,3 +94,4 @@ Possible issues:
 
 1. errors might arise when we attempt to get a file from a location when it is in the process of beign put there.
 2. when a client closes their program using an interrupt like ctrl+C, the server does not realise the program is over so it does not disconnect that client nor does it deauthorize the client's username and password.
+3. the server is not able to transmit files containing spaces or characters in languages with non-English characters(e.g. Arabic, Chinese, Japanese). This may be due to error when encoding and parsing the incoming command. 
