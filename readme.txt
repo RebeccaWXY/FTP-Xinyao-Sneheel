@@ -1,12 +1,20 @@
 Client:
+Server works primarily according to the pseudocode given, with message_exchange() separated as a function. 
 GET:
-PUT:
-ls:
-pwd:
-cd:
-!ls:
-!pwd:
-!cd:
+
+PUT: 
+
+ls: read the continuous message from server and output until the last file is given. 
+
+pwd: get message from server and output.
+
+cd: get message from server and output. 
+
+!ls: get file list via system call ls. 
+
+!pwd: get the working directory through getcwd(). 
+
+!cd: Operation on client side only. The command asks for new directory path and change path using chdir(). If the new path is not given, it will change to the root directory(cd ..). After the operation, it will notify the user with the success/failure state. 
 
 
 
