@@ -1,4 +1,13 @@
-Client:
+Description: 
+The pack is an application protocol built upon socket, focusing on file transferral. During the execution process, one need to start server first before starting client. One socket, srv_socket, will open as soon as client starts, used to communicate execution message between server and client. When doing file transferral(calling get/put command), a new temporary socket, file_socket, will open exclusively for file transmission, and close immediately after the transmission. 
+
+Executinng: 
+Use the makefile to build two separate packs FTPServer and FTPClient. 
+
+File explantions: 
+1. client.c:
+Code on the client side. 
+
 Server works primarily according to the pseudocode given, with message_exchange() separated as a function. 
 GET: after exchanging messages with server, start a new TCP connection to server and close the connection after receiving all bytes and writing them into buffer. 
 
@@ -22,13 +31,7 @@ cd: get message from server and output.
 
 
 
-
-
-
-
-
-
-Server:
+2. server.c:
 
 Server works primarily according to the pseudocode given.
 GET: In the GET method, the server accepts a connection to the new socket, and then serves to the client connected to that socket. The server first receives the name of the file whcih needs to be transferred from the server to the client. 
